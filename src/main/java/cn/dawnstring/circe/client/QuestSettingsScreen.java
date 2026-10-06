@@ -48,46 +48,55 @@ public final class QuestSettingsScreen extends Screen
             }
         }
         var preferences = QuestUiSettings.current();
-        if (page == 0)
+        switch (page)
         {
-            for (int index = 0; index < QuestTheme.Style.values().length; index++)
-            {
-                QuestTheme.Style style = QuestTheme.Style.values()[index];
-                button(left + 16, top + 76 + index * 66, panelWidth - 32, style.title(), () -> update(current ->
-                    new QuestUiSettings.Preferences(style.name(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
-                        current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom()))).setHeight(58);
-            }
-            button(left + 16, top + 288, panelWidth - 32, "背景不透明度  " + (int) (preferences.opacity() * 100) + "%", () -> update(current ->
-                new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
-                    current.hasHudCounters(), current.hudScale(), next(current.opacity(), new double[]{1, 0.9, 0.8}), current.graphZoom())));
-            button(left + 16, top + 320, panelWidth - 32, "界面动画  " + enabled(preferences.hasAnimations()), () -> update(current ->
-                new QuestUiSettings.Preferences(current.theme(), !current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
-                    current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
-        }
-        else if (page == 1)
-        {
-            button(left + 16, top + 86, panelWidth - 32, "调整 HUD 位置", () -> minecraft.setScreen(new QuestHudPositionScreen(this)));
-            button(left + 16, top + 124, panelWidth - 32, "HUD 大小  " + (int) (preferences.hudScale() * 100) + "%", () -> update(current ->
-                new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
-                    current.hasHudCounters(), next(current.hudScale(), new double[]{0.75, 1, 1.25, 1.5}), current.opacity(), current.graphZoom())));
-            button(left + 16, top + 162, panelWidth - 32, "显示任务描述  " + enabled(preferences.hasHudDescription()), () -> update(current ->
-                new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), !current.hasHudDescription(),
-                    current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
-            button(left + 16, top + 200, panelWidth - 32, "显示目标计数  " + enabled(preferences.hasHudCounters()), () -> update(current ->
-                new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
-                    !current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
-        }
-        else
-        {
-            button(left + 16, top + 86, panelWidth - 32, "显示背景网格  " + enabled(preferences.hasGrid()), () -> update(current ->
-                new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), !current.hasGrid(), current.hasHudDescription(),
-                    current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
-            button(left + 16, top + 124, panelWidth - 32, "适配缩放上限  " + (int) Math.round(preferences.graphZoom() * 100) + "%", () -> update(current ->
-                new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
-                    current.hasHudCounters(), current.hudScale(), current.opacity(), next(current.graphZoom(), new double[]{0.8, 1, 1.15, 1.5}))));
+            case 0 -> initAppearance(preferences);
+            case 1 -> initHud(preferences);
+            default -> initGraph(preferences);
         }
         button(left + 16, top + 394, 108, "恢复显示默认值", () -> update(current -> QuestUiSettings.DEFAULT));
         button(left + panelWidth - 104, top + 394, 88, "完成", this::onClose).primary();
+    }
+
+    private void initAppearance(QuestUiSettings.Preferences preferences)
+    {
+        for (int index = 0; index < QuestTheme.Style.values().length; index++)
+        {
+            QuestTheme.Style style = QuestTheme.Style.values()[index];
+            button(left + 16, top + 76 + index * 66, panelWidth - 32, style.title(), () -> update(current ->
+                new QuestUiSettings.Preferences(style.name(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
+                    current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom()))).setHeight(58);
+        }
+        button(left + 16, top + 288, panelWidth - 32, "背景不透明度  " + (int) (preferences.opacity() * 100) + "%", () -> update(current ->
+            new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
+                current.hasHudCounters(), current.hudScale(), next(current.opacity(), new double[]{1, 0.9, 0.8}), current.graphZoom())));
+        button(left + 16, top + 320, panelWidth - 32, "界面动画  " + enabled(preferences.hasAnimations()), () -> update(current ->
+            new QuestUiSettings.Preferences(current.theme(), !current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
+                current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
+    }
+
+    private void initHud(QuestUiSettings.Preferences preferences)
+    {
+        button(left + 16, top + 86, panelWidth - 32, "调整 HUD 位置", () -> minecraft.setScreen(new QuestHudPositionScreen(this)));
+        button(left + 16, top + 124, panelWidth - 32, "HUD 大小  " + (int) (preferences.hudScale() * 100) + "%", () -> update(current ->
+            new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
+                current.hasHudCounters(), next(current.hudScale(), new double[]{0.75, 1, 1.25, 1.5}), current.opacity(), current.graphZoom())));
+        button(left + 16, top + 162, panelWidth - 32, "显示任务描述  " + enabled(preferences.hasHudDescription()), () -> update(current ->
+            new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), !current.hasHudDescription(),
+                current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
+        button(left + 16, top + 200, panelWidth - 32, "显示目标计数  " + enabled(preferences.hasHudCounters()), () -> update(current ->
+            new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
+                !current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
+    }
+
+    private void initGraph(QuestUiSettings.Preferences preferences)
+    {
+        button(left + 16, top + 86, panelWidth - 32, "显示背景网格  " + enabled(preferences.hasGrid()), () -> update(current ->
+            new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), !current.hasGrid(), current.hasHudDescription(),
+                current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
+        button(left + 16, top + 124, panelWidth - 32, "适配缩放上限  " + (int) Math.round(preferences.graphZoom() * 100) + "%", () -> update(current ->
+            new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
+                current.hasHudCounters(), current.hudScale(), current.opacity(), next(current.graphZoom(), new double[]{0.8, 1, 1.15, 1.5}))));
     }
 
     private static String enabled(boolean isEnabled)

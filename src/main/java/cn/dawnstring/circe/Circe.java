@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 public class Circe
 {
     public static final String MODID = "circe";
+    public static final String MOD_VERSION = "1.0";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public Circe(IEventBus modEventBus)

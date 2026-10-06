@@ -624,7 +624,10 @@ public class QuestScreen extends Screen
         refreshCatalog(false);
         popup.close();
         configureGraphViewport(Math.max(40, editorLeft - graphLeft() - 3));
+        // 侧栏透明时只透出游戏场景，避免底层按钮和文字穿过属性面板。
+        graphics.enableScissor(0, 0, (int) (editorLeft * uiScale), height);
         render(graphics, mouseX, mouseY, partialTick);
+        graphics.disableScissor();
     }
 
     public boolean containsEditorGraph(double mouseX, double mouseY)

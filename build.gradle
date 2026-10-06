@@ -9,7 +9,22 @@ tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-version = mod_version
+// 直接读取源码常量，避免配置阶段加载依赖 Minecraft 的主类。
+def mainClassSource = providers.fileContents(
+    layout.projectDirectory.file('src/main/java/cn/dawnstring/circe/Circe.java')
+).asText.get()
+def declaredVersions = mainClassSource.findAll(
+    /(?m)^\s*public\s+static\s+final\s+String\s+MOD_VERSION\s*=\s*"([0-9A-Za-z][0-9A-Za-z.+_-]*)"\s*;/
+)
+{ declaration, declaredVersion ->
+    declaredVersion
+}
+if (declaredVersions.size() != 1)
+{
+    throw new GradleException('Circe.java 必须声明唯一的 public static final String MOD_VERSION 字面量版本。')
+}
+
+version = declaredVersions.first()
 group = mod_group_id
 
 sourceSets.main.resources {
@@ -86,7 +101,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
-            mod_version            : mod_version,
+            mod_version            : project.version.toString(),
     ]
     inputs.properties replaceProperties
     expand replaceProperties
