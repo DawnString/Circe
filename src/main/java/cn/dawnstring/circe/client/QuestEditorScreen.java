@@ -2,6 +2,7 @@ package cn.dawnstring.circe.client;
 
 import cn.dawnstring.circe.network.EditPayload;
 import cn.dawnstring.circe.quest.QuestDefinition;
+import cn.dawnstring.circe.quest.QuestValidationException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraft.client.gui.GuiGraphics;
@@ -40,7 +41,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
 
     private QuestEditorScreen(Screen parent, ResourceLocation initialQuest, boolean isGraphEditor)
     {
-        super(parent, isGraphEditor ? "任务编辑" : "任务工作室");
+        super(parent, isGraphEditor ? "circe.editor.quest" : "circe.editor.studio");
         this.isGraphEditor = isGraphEditor;
         if (initialQuest != null && ClientQuestState.definition(initialQuest) != null)
         {
@@ -63,7 +64,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
         if (source != null)
         {
             editor.draft = source.toJson();
-            editor.draft.addProperty("title", Component.translatable(source.title()).getString() + "（副本）");
+            editor.draft.addProperty("title", QuestTranslations.text("circe.editor.copy_title", Component.translatable(source.title())));
             editor.draft.addProperty("revision", 1);
         }
         editor.selectedChapter = chapter;
@@ -112,20 +113,20 @@ public final class QuestEditorScreen extends QuestEditingScreen
         }
         if (!isGraphEditor)
         {
-            button(frameLeft + frameWidth - 157, frameTop + 7, 68, "章节管理", () ->
+            button(frameLeft + frameWidth - 157, frameTop + 7, 68, QuestTranslations.text("circe.editor.chapters"), () ->
                 minecraft.setScreen(new QuestChapterEditorScreen(this)));
-            button(frameLeft + frameWidth - 80, frameTop + 7, 68, "任务书标题", () ->
+            button(frameLeft + frameWidth - 80, frameTop + 7, 68, QuestTranslations.text("circe.editor.book_label"), () ->
                 minecraft.setScreen(new QuestTitleEditorScreen(this)));
             addRenderableWidget(new QuestDropdown(frameLeft + 10, frameTop + 43, 145,
                 ClientQuestState.chapters().stream().map(chapter -> new QuestDropdown.Option(chapter.id(),
-                    Component.translatable(chapter.title()).getString())).toList(), selectedChapter, chapter ->
+                    Component.translatable(chapter.title()))).toList(), selectedChapter, chapter ->
                 {
                     selectedChapter = chapter;
                     listPage = 0;
                     createDraft();
                     rebuild();
                 }));
-            button(frameLeft + 10, frameTop + 76, 145, "＋ 在章节中新建任务", () ->
+            button(frameLeft + 10, frameTop + 76, 145, QuestTranslations.text("circe.button.new_quest_in_chapter"), () ->
             {
                 if (!isPending)
                 {
@@ -154,18 +155,18 @@ public final class QuestEditorScreen extends QuestEditingScreen
                         }
                     });
             }
-            button(frameLeft + 10, frameTop + 343, 68, "上一页", () ->
+            button(frameLeft + 10, frameTop + 343, 68, QuestTranslations.text("circe.button.previous"), () ->
             {
                 listPage--;
                 rebuild();
             });
-            button(frameLeft + 87, frameTop + 343, 68, "下一页", () ->
+            button(frameLeft + 87, frameTop + 343, 68, QuestTranslations.text("circe.button.next"), () ->
             {
                 listPage++;
                 rebuild();
             });
         }
-        String[] pages = {"基本信息", "目标", "奖励", "内容与图片"};
+        String[] pages = {QuestTranslations.text("circe.editor.basic"), QuestTranslations.text("circe.editor.objectives"), QuestTranslations.text("circe.editor.rewards"), QuestTranslations.text("circe.editor.content")};
         int tabWidth = Math.min(84, contentWidth / pages.length);
         for (int index = 0; index < pages.length; index++)
         {
@@ -192,10 +193,10 @@ public final class QuestEditorScreen extends QuestEditingScreen
         {
             contentFields(left, frameTop + 87, contentWidth);
         }
-        button(left, frameTop + frameHeight - 26, 68, "保存任务", this::save).primary();
-        button(left + 76, frameTop + frameHeight - 26, 68, "删除任务", this::delete);
-        button(left + 152, frameTop + frameHeight - 26, 68, "返回", this::onClose);
-        button(left + 228, frameTop + frameHeight - 26, 104, "载入服务端版本", () ->
+        button(left, frameTop + frameHeight - 26, 68, QuestTranslations.text("circe.button.save_quest"), this::save).primary();
+        button(left + 76, frameTop + frameHeight - 26, 68, QuestTranslations.text("circe.button.delete_quest"), this::delete);
+        button(left + 152, frameTop + frameHeight - 26, 68, QuestTranslations.text("circe.button.back"), this::onClose);
+        button(left + 228, frameTop + frameHeight - 26, 104, QuestTranslations.text("circe.button.load_server"), () ->
         {
             if (isPending)
             {
@@ -215,34 +216,34 @@ public final class QuestEditorScreen extends QuestEditingScreen
 
     private void basicFields(int left, int top, int width)
     {
-        bind("id", left, top, width, "任务 ID（保存后固定）", 256).setEditable(originalId == null);
-        bind("title", left, top + 42, width, "任务名称", 256);
-        label("所属章节", left, top + 72);
+        bind("id", left, top, width, QuestTranslations.text("circe.editor.quest_id"), 256).setEditable(originalId == null);
+        bind("title", left, top + 42, width, QuestTranslations.text("circe.editor.quest_title"), 256);
+        label(QuestTranslations.text("circe.editor.chapter"), left, top + 72);
         addRenderableWidget(new QuestDropdown(left, top + 84, width,
             ClientQuestState.chapters().stream().map(chapter -> new QuestDropdown.Option(chapter.id(),
-                Component.translatable(chapter.title()).getString())).toList(), values.get("chapter"),
+                Component.translatable(chapter.title()))).toList(), values.get("chapter"),
             chapter -> values.put("chapter", chapter)));
         int half = (width - 12) / 2;
-        bind("revision", left, top + 126, half, "任务版本", 12);
-        bind("order", left + half + 12, top + 126, half, "章节内排序", 12);
-        bind("prerequisites", left, top + 176, width, "前置任务 ID（逗号分隔）", 8192);
-        label("修改目标或前置时请增加任务版本。", left, top + 212);
-        label("任务版本增加后，该任务进度会重置。", left, top + 228);
-        label("描述排版、插图与封面在「内容与图片」中设置。", left, top + 258);
+        bind("revision", left, top + 126, half, QuestTranslations.text("circe.editor.revision"), 12);
+        bind("order", left + half + 12, top + 126, half, QuestTranslations.text("circe.editor.order"), 12);
+        bind("prerequisites", left, top + 176, width, QuestTranslations.text("circe.editor.prerequisites"), 8192);
+        label(QuestTranslations.text("circe.editor.revision_hint"), left, top + 212);
+        label(QuestTranslations.text("circe.editor.reset_hint"), left, top + 228);
+        label(QuestTranslations.text("circe.editor.content_hint"), left, top + 258);
     }
 
     private void contentFields(int left, int top, int width)
     {
-        label("任务封面", left, top - 12);
+        label(QuestTranslations.text("circe.editor.cover"), left, top - 12);
         bind("image", left, top, width - 86, "", 256);
-        button(left + width - 78, top, 78, "选择图片", () ->
+        button(left + width - 78, top, 78, QuestTranslations.text("circe.button.pick_image"), () ->
             minecraft.setScreen(new QuestImagePickerScreen(this, image -> values.put("image", image))));
-        button(left, top + 37, 112, "编辑图文描述", () ->
+        button(left, top + 37, 112, QuestTranslations.text("circe.button.edit_content"), () ->
             minecraft.setScreen(new QuestRichTextEditorScreen(this, values.get("description"),
                 text -> values.put("description", text)))).primary();
-        label("支持标题、强调、颜色、列表和正文插图。", left, top + 66);
+        label(QuestTranslations.text("circe.editor.markup_hint"), left, top + 66);
         description = addRenderableWidget(new QuestMultilineEditBox(font, left, top + 82, width, 166,
-            Component.literal("使用图文编辑器添加内容"), Component.literal("任务描述")));
+            Component.translatable("circe.editor.description_placeholder"), Component.translatable("circe.editor.description")));
         description.setCharacterLimit(8192);
         description.setValue(values.get("description"));
         description.setValueListener(value -> values.put("description", value));
@@ -266,7 +267,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
             var rewardType = isObjective ? null : cn.dawnstring.circe.quest.RewardType.parse(
                 entry.has("type") ? entry.get("type").getAsString() : "item");
             String name = isObjective ? Component.translatable(entry.get("title").getAsString()).getString()
-                : rewardType.title() + (rewardType.hasItem() ? " · " + entry.get("item").getAsString() : "");
+                : QuestTranslations.text(rewardType.title()) + (rewardType.hasItem() ? " · " + entry.get("item").getAsString() : "");
             int y = top + index * 18;
             button(left, y, width - 34, name + " ×" + entry.get("count").getAsString(), () ->
                 minecraft.setScreen(new QuestEntryEditorScreen(this, entry, isObjective,
@@ -277,7 +278,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
                 rebuild();
             }).setHeight(16);
         }
-        var add = button(left, top + 294, 100, isObjective ? "＋ 添加目标" : "＋ 添加奖励", () ->
+        var add = button(left, top + 294, 100, isObjective ? QuestTranslations.text("circe.button.add_objective") : QuestTranslations.text("circe.button.add_reward"), () ->
             minecraft.setScreen(new QuestEntryEditorScreen(this, newEntry(isObjective, entries),
                 isObjective, entries::add)));
         add.active = entries.size() < 16;
@@ -290,7 +291,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
         {
             entry.addProperty("id", "objective_" + index);
             entry.addProperty("type", "hold");
-            entry.addProperty("title", "收集橡木");
+            entry.addProperty("title", QuestTranslations.text("circe.editor.default_objective"));
         }
         else
         {
@@ -336,7 +337,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
         }
         while (ClientQuestState.definition(ResourceLocation.parse(questId)) != null);
         draft = new JsonObject();
-        draft.addProperty("title", "新任务");
+        draft.addProperty("title", QuestTranslations.text("circe.editor.new_quest"));
         if (selectedChapter == null)
         {
             selectedChapter = ClientQuestState.chapters().isEmpty() ? "" : ClientQuestState.chapters().getFirst().id();
@@ -366,7 +367,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
             .map(entry -> entry.getAsString()).collect(java.util.stream.Collectors.joining(", ")));
         baselineRevision = ClientQuestState.bookRevision();
         shouldConfirmDelete = false;
-        status = "";
+        status = Component.empty();
         page = 0;
     }
 
@@ -381,7 +382,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
             ResourceLocation id = ResourceLocation.parse(values.get("id").trim());
             if (originalId == null && ClientQuestState.definition(id) != null)
             {
-                throw new IllegalArgumentException("任务 ID 已存在，请使用不同的 ID");
+                throw new IllegalArgumentException(QuestTranslations.text("circe.error.quest_exists"));
             }
             for (String key : new String[]{"title", "chapter", "description", "image"})
             {
@@ -404,7 +405,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
         }
         catch (RuntimeException exception)
         {
-            status = exception.getMessage();
+            status = QuestValidationException.message(exception);
         }
     }
 
@@ -417,7 +418,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
         if (!shouldConfirmDelete)
         {
             shouldConfirmDelete = true;
-            status = "再次点击删除任务确认；有后继任务依赖时会拒绝删除。";
+            status = Component.translatable("circe.editor.confirm_quest_delete");
             return;
         }
         send("delete", originalId.toString(), "");
@@ -434,7 +435,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
                 button.active = false;
             }
         }
-        status = "正在保存…";
+        status = Component.translatable("circe.editor.saving");
         PacketDistributor.sendToServer(new EditPayload(operation, id, json, baselineRevision));
     }
 
@@ -450,7 +451,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
         {
             if (!isPending && displayedRevision != ClientQuestState.bookRevision())
             {
-                status = "服务端任务书已更新；草稿保留，载入服务端版本后再编辑。";
+                status = Component.translatable("circe.editor.conflict");
                 rebuild();
             }
             return;
@@ -553,7 +554,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
     {
         if (isPending)
         {
-            status = "等待服务端保存结果后再返回。";
+            status = Component.translatable("circe.editor.wait_save");
             return;
         }
         if (isGraphEditor)

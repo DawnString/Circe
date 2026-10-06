@@ -11,7 +11,7 @@ public final class QuestGraphContextMenu
     private static final int WIDTH = 136;
     private static final int ROW_HEIGHT = 22;
 
-    public record Action(String title, Runnable onSelect)
+    public record Action(Component title, Runnable onSelect)
     {
     }
 
@@ -71,7 +71,7 @@ public final class QuestGraphContextMenu
             {
                 graphics.fill(left + 2, rowTop, left + WIDTH - 2, rowTop + ROW_HEIGHT, QuestTheme.selected());
             }
-            graphics.drawString(font, QuestTheme.fit(font, Component.literal(actions.get(index).title()), WIDTH - 16),
+            graphics.drawString(font, QuestTheme.fit(font, actions.get(index).title(), WIDTH - 16),
                 left + 8, rowTop + 7, QuestTheme.text(), false);
         }
         graphics.pose().popPose();

@@ -2,10 +2,12 @@ package cn.dawnstring.circe.client;
 
 import cn.dawnstring.circe.quest.ObjectiveType;
 import cn.dawnstring.circe.quest.QuestStatistics;
+import cn.dawnstring.circe.quest.QuestValidationException;
 import com.google.gson.JsonObject;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.Consumer;
 
@@ -25,7 +27,7 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
 
     public QuestEntryEditorScreen(QuestEditorScreen parent, JsonObject entry, boolean isObjective, Consumer<JsonObject> onSave)
     {
-        super(parent, isObjective ? "编辑任务目标" : "编辑任务奖励");
+        super(parent, isObjective ? "circe.editor.objective" : "circe.editor.reward");
         this.entry = entry.deepCopy();
         this.isObjective = isObjective;
         this.onSave = onSave;
@@ -48,11 +50,11 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
         int y = frameTop + 56;
         if (isObjective)
         {
-            identifier = field(left, y, width, "目标 ID（任务内唯一）", entry.get("id").getAsString(), 64);
-            name = field(left, y + 44, width, "目标名称", entry.get("title").getAsString(), 256);
+            identifier = field(left, y, width, QuestTranslations.text("circe.editor.objective_id"), entry.get("id").getAsString(), 64);
+            name = field(left, y + 44, width, QuestTranslations.text("circe.editor.objective_title"), entry.get("title").getAsString(), 256);
             identifier.setResponder(value -> entry.addProperty("id", value));
             name.setResponder(value -> entry.addProperty("title", value));
-            label("任务目标类型", left, y + 75);
+            label(QuestTranslations.text("circe.editor.objective_type"), left, y + 75);
             addRenderableWidget(new QuestDropdown(left, y + 88, width,
                 ObjectiveType.all().stream().map(candidate -> new QuestDropdown.Option(candidate.id(), candidate.title())).toList(), type.id(), id ->
                 {
@@ -74,7 +76,7 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
         }
         else
         {
-            label("奖励类型", left, y - 12);
+            label(QuestTranslations.text("circe.editor.reward_type"), left, y - 12);
             addRenderableWidget(new QuestDropdown(left, y, width,
                 cn.dawnstring.circe.quest.RewardType.all().stream().map(candidate -> new QuestDropdown.Option(candidate.id(), candidate.title())).toList(),
                 rewardType.id(), id ->
@@ -94,19 +96,19 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
         boolean hasTarget = !isStatistic && (isObjective || rewardType.hasItem());
         if (hasTarget)
         {
-            target = field(left, y, width - 90, isObjective ? "目标对象" : "奖励物品",
+            target = field(left, y, width - 90, isObjective ? QuestTranslations.text("circe.editor.target") : QuestTranslations.text("circe.editor.reward_item"),
                 entry.get(isObjective ? "target" : "item").getAsString(), 256);
             target.setResponder(value -> entry.addProperty(isObjective ? "target" : "item", value));
             if (!isObjective || type.targetKind() != ObjectiveType.TargetKind.EVENT)
             {
-                button(left + width - 82, y, 82, isObjective && type.targetKind() == ObjectiveType.TargetKind.ENTITY ? "选择实体" : "选择物品", () ->
+                button(left + width - 82, y, 82, isObjective && type.targetKind() == ObjectiveType.TargetKind.ENTITY ? QuestTranslations.text("circe.button.pick_entity") : QuestTranslations.text("circe.button.pick_item"), () ->
                     minecraft.setScreen(new QuestItemPickerScreen(this, isObjective && type.targetKind() == ObjectiveType.TargetKind.ENTITY,
                         id -> entry.addProperty(isObjective ? "target" : "item", id.toString()))));
             }
             y += 44;
         }
-        String countLabel = isStatistic ? "目标数量（单位：" + statisticUnit().title() + "）"
-            : isObjective ? "目标数量（1..1000000）" : "奖励数量（1.." + rewardType.maximumCount() + "）";
+        String countLabel = isStatistic ? QuestTranslations.text("circe.editor.stat_count", statisticUnit().title())
+            : isObjective ? QuestTranslations.text("circe.editor.objective_count") : QuestTranslations.text("circe.editor.reward_count", rewardType.maximumCount());
         String countValue = isStatistic ? statisticUnit().input(entry.get("count").getAsInt()) : entry.get("count").getAsString();
         count = field(left, y, width, countLabel, countValue, 24);
         count.setResponder(value ->
@@ -128,24 +130,24 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
         var schema = isObjective ? type.schema() : rewardType.schema();
         if (!schema.fields().isEmpty())
         {
-            button(left, y + 44, 140, "扩展配置（" + schema.fields().size() + " 项）", () ->
+            button(left, y + 44, 140, QuestTranslations.text("circe.editor.config_count", schema.fields().size()), () ->
                 minecraft.setScreen(new QuestConfigEditorScreen(this, schema,
                     entry.has("config") ? entry.getAsJsonObject("config") : new JsonObject(),
                     configuration -> entry.add("config", configuration))));
         }
         if (!isObjective && rewardType == cn.dawnstring.circe.quest.RewardType.SPECIAL_ITEM)
         {
-            var nameField = field(left, y + 44, width, "自定义名称（留空保留组件中的名字）", customName, 256);
+            var nameField = field(left, y + 44, width, QuestTranslations.text("circe.editor.custom_name"), customName, 256);
             nameField.setResponder(value -> customName = value);
-            label("高级物品组件 JSON（附魔、耐久、模组组件等）", left, y + 77);
+            label(QuestTranslations.text("circe.editor.components_hint"), left, y + 77);
             var componentField = addRenderableWidget(new QuestMultilineEditBox(font, left, y + 91, width, 78,
-                net.minecraft.network.chat.Component.literal("{}"), net.minecraft.network.chat.Component.literal("物品组件")));
+                Component.literal("{}"), Component.translatable("circe.editor.components")));
             componentField.setCharacterLimit(8192);
             componentField.setValue(componentsText);
             componentField.setValueListener(value -> componentsText = value);
         }
-        button(left, frameTop + frameHeight - 26, 70, "确定", this::save).primary();
-        button(left + 78, frameTop + frameHeight - 26, 70, "取消", this::onClose);
+        button(left, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.ok"), this::save).primary();
+        button(left + 78, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.cancel"), this::onClose);
     }
 
     private ResourceLocation statisticType()
@@ -160,10 +162,10 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
 
     private int statisticFields(int left, int y, int width)
     {
-        label("统计类别", left, y - 12);
+        label(QuestTranslations.text("circe.editor.stat_category"), left, y - 12);
         addRenderableWidget(new QuestDropdown(left, y, width,
             BuiltInRegistries.STAT_TYPE.keySet().stream().sorted().map(id -> new QuestDropdown.Option(id.toString(),
-                QuestStatistics.categoryName(id).getString())).toList(), statisticType().toString(), id ->
+                QuestStatistics.categoryName(id))).toList(), statisticType().toString(), id ->
             {
                 entry.addProperty("statistic_type", id);
                 var registry = BuiltInRegistries.STAT_TYPE.get(ResourceLocation.parse(id)).getRegistry();
@@ -172,18 +174,18 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
                 entry.addProperty("count", 1);
                 rebuild();
             }));
-        target = field(left, y + 44, width - 90, "统计项目（通过选择器搜索）", entry.get("target").getAsString(), 256);
+        target = field(left, y + 44, width - 90, QuestTranslations.text("circe.editor.stat_target"), entry.get("target").getAsString(), 256);
         target.setEditable(false);
-        button(left + width - 82, y + 44, 82, "选择统计", () ->
+        button(left + width - 82, y + 44, 82, QuestTranslations.text("circe.button.pick_statistic"), () ->
             minecraft.setScreen(new QuestStatisticPickerScreen(this, statisticType(), id ->
             {
                 entry.addProperty("target", id.toString());
                 entry.addProperty("count", 1);
             })));
-        label("计数方式", left, y + 76);
+        label(QuestTranslations.text("circe.editor.stat_mode"), left, y + 76);
         addRenderableWidget(new QuestDropdown(left, y + 88, width,
-            java.util.List.of(new QuestDropdown.Option("total", "累计达标（包含已有统计）"),
-                new QuestDropdown.Option("since_unlock", "解锁后新增（保存起始统计值）")),
+            java.util.List.of(new QuestDropdown.Option("total", "circe.stat.mode.total"),
+                new QuestDropdown.Option("since_unlock", "circe.stat.mode.since_unlock")),
             entry.has("statistic_mode") ? entry.get("statistic_mode").getAsString() : "total",
             mode -> entry.addProperty("statistic_mode", mode)));
         return y + 132;
@@ -198,7 +200,7 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
             int maximumCount = isStatistic ? Integer.MAX_VALUE : isObjective ? 1_000_000 : rewardType.maximumCount();
             if (quantity < 1 || quantity > maximumCount)
             {
-                throw new IllegalArgumentException("数量超出范围");
+                throw new IllegalArgumentException(QuestTranslations.text("circe.error.count_range"));
             }
             if (isObjective || rewardType.hasItem())
             {
@@ -208,7 +210,7 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
             {
                 if (!identifier.getValue().matches("[a-z0-9_./-]+") || name.getValue().isBlank())
                 {
-                    throw new IllegalArgumentException("目标 ID 或名称无效");
+                    throw new IllegalArgumentException(QuestTranslations.text("circe.error.objective_identity"));
                 }
                 entry.addProperty("id", identifier.getValue());
                 entry.addProperty("title", name.getValue());
@@ -244,7 +246,7 @@ public final class QuestEntryEditorScreen extends QuestEditingScreen
         }
         catch (RuntimeException exception)
         {
-            status = exception.getMessage();
+            status = QuestValidationException.message(exception);
         }
     }
 

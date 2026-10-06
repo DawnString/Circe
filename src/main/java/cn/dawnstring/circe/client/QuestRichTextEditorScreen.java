@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
+
 import java.util.function.Consumer;
 
 public final class QuestRichTextEditorScreen extends QuestEditingScreen
@@ -20,7 +21,7 @@ public final class QuestRichTextEditorScreen extends QuestEditingScreen
 
     public QuestRichTextEditorScreen(Screen parent, String markup, Consumer<String> onSave)
     {
-        super(parent, "图文编辑器");
+        super(parent, "circe.rich.title");
         this.markup = markup;
         this.onSave = onSave;
     }
@@ -28,25 +29,27 @@ public final class QuestRichTextEditorScreen extends QuestEditingScreen
     @Override
     protected void initEditor()
     {
-        String[] labels = {"标题", "强调", "斜体", "颜色", "列表"};
-        String[] templates = {"\n## 标题\n", "**强调文字**", "*斜体文字*", "<#76D46A>彩色文字</>", "\n- 列表内容\n"};
+        String[] labels = {QuestTranslations.text("circe.rich.heading"), QuestTranslations.text("circe.rich.bold"), QuestTranslations.text("circe.rich.italic"), QuestTranslations.text("circe.rich.color"), QuestTranslations.text("circe.rich.list")};
+        String[] templates = {QuestTranslations.text("circe.rich.template_heading"), QuestTranslations.text("circe.rich.template_bold"),
+            QuestTranslations.text("circe.rich.template_italic"), QuestTranslations.text("circe.rich.template_color"),
+            QuestTranslations.text("circe.rich.template_list")};
         for (int index = 0; index < labels.length; index++)
         {
             String template = templates[index];
             button(frameLeft + 16 + index * 63, frameTop + 44, 57, labels[index], () -> insert(template));
         }
-        button(frameLeft + 331, frameTop + 44, 70, "插入图片", () ->
+        button(frameLeft + 331, frameTop + 44, 70, QuestTranslations.text("circe.button.insert_image"), () ->
             minecraft.setScreen(new QuestImagePickerScreen(this, id ->
             {
                 if (!id.isEmpty())
                 {
-                    markup += "\n![插图](" + id + ")\n";
+                    markup += QuestTranslations.text("circe.rich.template_image", id);
                 }
             })));
         int columnWidth = (frameWidth - 48) / 2;
-        label("编辑内容 · Markdown", frameLeft + 16, frameTop + 80);
+        label(QuestTranslations.text("circe.rich.markdown"), frameLeft + 16, frameTop + 80);
         source = addRenderableWidget(new QuestMultilineEditBox(font, frameLeft + 16, frameTop + 94, columnWidth, 260,
-            Component.literal("输入描述，右侧实时预览"), Component.literal("图文内容")));
+            Component.translatable("circe.rich.placeholder"), Component.translatable("circe.rich.content")));
         source.setCharacterLimit(8192);
         source.setValue(markup);
         source.setValueListener(value -> markup = value);
@@ -54,13 +57,13 @@ public final class QuestRichTextEditorScreen extends QuestEditingScreen
         previewTop = frameTop + 94;
         previewWidth = columnWidth;
         previewHeight = 260;
-        label("实时预览", previewLeft, frameTop + 80);
-        button(frameLeft + 16, frameTop + frameHeight - 26, 100, "应用到任务", () ->
+        label(QuestTranslations.text("circe.rich.preview"), previewLeft, frameTop + 80);
+        button(frameLeft + 16, frameTop + frameHeight - 26, 100, QuestTranslations.text("circe.button.apply_quest"), () ->
         {
             onSave.accept(markup);
             onClose();
         }).primary();
-        button(frameLeft + 124, frameTop + frameHeight - 26, 70, "取消", this::onClose);
+        button(frameLeft + 124, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.cancel"), this::onClose);
     }
 
     private void insert(String template)

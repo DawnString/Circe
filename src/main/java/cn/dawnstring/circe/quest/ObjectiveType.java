@@ -1,13 +1,14 @@
 package cn.dawnstring.circe.quest;
 
+import cn.dawnstring.circe.api.QuestConfigSchema;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.ToIntBiFunction;
 import java.util.function.Consumer;
-import cn.dawnstring.circe.api.QuestConfigSchema;
+import java.util.function.ToIntBiFunction;
 
 public final class ObjectiveType
 {
@@ -17,12 +18,12 @@ public final class ObjectiveType
     }
 
     private static final Map<String, ObjectiveType> TYPES = new LinkedHashMap<>();
-    public static final ObjectiveType HOLD = register("circe:hold", "持有物品", TargetKind.ITEM,
+    public static final ObjectiveType HOLD = register("circe:hold", "circe.type.hold", TargetKind.ITEM,
         (player, objective) -> QuestService.countItems(player, objective.target()));
-    public static final ObjectiveType SUBMIT = register("circe:submit", "提交物品", TargetKind.ITEM, null);
-    public static final ObjectiveType KILL = register("circe:kill", "击杀实体", TargetKind.ENTITY, null);
-    public static final ObjectiveType EVENT = register("circe:event", "事件计数", TargetKind.EVENT, null);
-    public static final ObjectiveType STATISTIC = register("circe:statistic", "统计数据", TargetKind.STATISTIC,
+    public static final ObjectiveType SUBMIT = register("circe:submit", "circe.type.submit", TargetKind.ITEM, null);
+    public static final ObjectiveType KILL = register("circe:kill", "circe.type.kill", TargetKind.ENTITY, null);
+    public static final ObjectiveType EVENT = register("circe:event", "circe.type.event", TargetKind.EVENT, null);
+    public static final ObjectiveType STATISTIC = register("circe:statistic", "circe.type.statistic", TargetKind.STATISTIC,
         (player, objective) -> player.getStats().getValue(QuestStatistics.resolve(objective.statisticType(), objective.target())));
     private final String id;
     private final String title;
@@ -69,7 +70,7 @@ public final class ObjectiveType
         ObjectiveType type = TYPES.get(normalized);
         if (type == null)
         {
-            throw new IllegalArgumentException("未注册的目标类型 " + id);
+            throw new QuestValidationException("circe.validation.objective_type", id);
         }
         return type;
     }
@@ -84,6 +85,7 @@ public final class ObjectiveType
         return id;
     }
 
+    /** 显示名称的翻译键或原文，由客户端解析。 */
     public String title()
     {
         return title;

@@ -1,14 +1,14 @@
 package cn.dawnstring.circe.quest;
 
-import cn.dawnstring.circe.network.ActionPayload;
-import cn.dawnstring.circe.network.CatalogPayload;
-import cn.dawnstring.circe.network.ProgressPayload;
-import cn.dawnstring.circe.network.EditPayload;
-import cn.dawnstring.circe.network.EditResultPayload;
 import cn.dawnstring.circe.Circe;
 import cn.dawnstring.circe.api.QuestApi;
 import cn.dawnstring.circe.api.QuestState;
 import cn.dawnstring.circe.api.event.QuestLifecycleEvent;
+import cn.dawnstring.circe.network.ActionPayload;
+import cn.dawnstring.circe.network.CatalogPayload;
+import cn.dawnstring.circe.network.EditPayload;
+import cn.dawnstring.circe.network.EditResultPayload;
+import cn.dawnstring.circe.network.ProgressPayload;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -100,24 +100,19 @@ public final class QuestService
     {
         if (!canEdit(player))
         {
-            PacketDistributor.sendToPlayer(player, new EditResultPayload(false, "只有管理员能编辑任务"));
+            PacketDistributor.sendToPlayer(player, new EditResultPayload(false, Component.translatable("circe.error.admin_only")));
             return;
         }
         try
         {
             CATALOG.edit(payload);
             player.server.getPlayerList().getPlayers().forEach(QuestService::synchronizeAll);
-            PacketDistributor.sendToPlayer(player, new EditResultPayload(true, "已保存"));
+            PacketDistributor.sendToPlayer(player, new EditResultPayload(true, Component.translatable("circe.editor.saved")));
         }
         catch (Exception exception)
         {
-            String message = exception.getMessage();
-            if (message == null)
-            {
-                message = "保存失败";
-            }
             PacketDistributor.sendToPlayer(player, new EditResultPayload(false,
-                message.substring(0, Math.min(1024, message.length()))));
+                Component.translatable("circe.error.save", QuestValidationException.message(exception))));
         }
     }
 
@@ -316,7 +311,7 @@ public final class QuestService
         }
         catch (RuntimeException exception)
         {
-            player.displayClientMessage(Component.literal("奖励配置无效，请联系管理员"), false);
+            player.displayClientMessage(Component.translatable("circe.error.reward_invalid"), false);
             return false;
         }
         if (!canFitRewards(player, rewards))
@@ -348,7 +343,7 @@ public final class QuestService
                 player.getInventory().setChanged();
                 player.containerMenu.broadcastChanges();
                 QuestLifecycleEvent.publish(new QuestLifecycleEvent.RewardFailed(player, definition, QuestApi.snapshot(player, definition), index));
-                player.displayClientMessage(Component.literal("部分奖励发放失败，请联系管理员处理"), false);
+                player.displayClientMessage(Component.translatable("circe.error.reward_failed"), false);
                 return false;
             }
         }

@@ -15,7 +15,7 @@ public final class QuestStatisticPickerScreen extends QuestEditingScreen
 {
     private static final int PAGE_SIZE = 8;
     private static final int ROW_HEIGHT = 34;
-    private record Entry(ResourceLocation id, String name)
+    private record Entry(ResourceLocation id, Component name)
     {
     }
 
@@ -28,19 +28,19 @@ public final class QuestStatisticPickerScreen extends QuestEditingScreen
 
     public QuestStatisticPickerScreen(Screen parent, ResourceLocation statisticType, Consumer<ResourceLocation> onSelect)
     {
-        super(parent, "统计项目 · " + QuestStatistics.categoryName(statisticType).getString());
+        super(parent, Component.translatable("circe.picker.stat_title", QuestStatistics.categoryName(statisticType)));
         this.statisticType = statisticType;
         this.onSelect = onSelect;
         var type = BuiltInRegistries.STAT_TYPE.get(statisticType);
         entries = type.getRegistry().keySet().stream().sorted()
-            .map(id -> new Entry(id, QuestStatistics.name(type, id).getString())).toList();
+            .map(id -> new Entry(id, QuestStatistics.name(type, id))).toList();
     }
 
     @Override
     protected void initEditor()
     {
         var search = field(frameLeft + 16, frameTop + 54, frameWidth - 32,
-            "搜索统计名称、注册 ID 或模组命名空间", query, 128);
+            QuestTranslations.text("circe.picker.stat_search"), query, 128);
         search.setResponder(value ->
         {
             query = value;
@@ -48,16 +48,16 @@ public final class QuestStatisticPickerScreen extends QuestEditingScreen
             filter();
         });
         filter();
-        button(frameLeft + 16, frameTop + frameHeight - 26, 70, "上一页", () -> page = Math.max(0, page - 1));
-        button(frameLeft + 94, frameTop + frameHeight - 26, 70, "下一页",
+        button(frameLeft + 16, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.previous"), () -> page = Math.max(0, page - 1));
+        button(frameLeft + 94, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.next"),
             () -> page = Math.min(Math.max(0, (matches.size() - 1) / PAGE_SIZE), page + 1));
-        button(frameLeft + frameWidth - 86, frameTop + frameHeight - 26, 70, "返回", this::onClose);
+        button(frameLeft + frameWidth - 86, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.back"), this::onClose);
     }
 
     private void filter()
     {
         String normalized = query.toLowerCase(Locale.ROOT);
-        matches = entries.stream().filter(entry -> entry.name().toLowerCase(Locale.ROOT).contains(normalized)
+        matches = entries.stream().filter(entry -> entry.name().getString().toLowerCase(Locale.ROOT).contains(normalized)
             || entry.id().toString().contains(normalized)).toList();
     }
 
@@ -74,14 +74,14 @@ public final class QuestStatisticPickerScreen extends QuestEditingScreen
             graphics.fill(left, top, left + frameWidth - 32, top + ROW_HEIGHT - 3,
                 isHovered ? QuestTheme.selected() : QuestTheme.panel());
             String unit = QuestStatistics.unit(statisticType, entry.id()).title();
-            graphics.drawString(font, QuestTheme.fit(font, Component.literal(entry.name()), frameWidth - 140),
+            graphics.drawString(font, QuestTheme.fit(font, entry.name(), frameWidth - 140),
                 left + 8, top + 5, QuestTheme.text(), false);
             graphics.drawString(font, unit, left + frameWidth - 48 - font.width(unit), top + 5, QuestTheme.accent(), false);
             graphics.drawString(font, QuestTheme.fit(font, Component.literal(entry.id().toString()), frameWidth - 48),
                 left + 8, top + 18, QuestTheme.muted(), false);
         }
-        graphics.drawString(font, "找到 " + matches.size() + " 项 · " + (page + 1) + " / "
-            + Math.max(1, (matches.size() + PAGE_SIZE - 1) / PAGE_SIZE),
+        graphics.drawString(font, QuestTranslations.text("circe.picker.results", matches.size(), page + 1,
+            Math.max(1, (matches.size() + PAGE_SIZE - 1) / PAGE_SIZE)),
             frameLeft + 16, frameTop + frameHeight - 48, QuestTheme.muted(), false);
     }
 

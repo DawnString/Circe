@@ -57,7 +57,7 @@ public class QuestScreen extends Screen
     private double pressedY;
     private long dragRevision;
     private long observedEditResult;
-    private String graphStatus = "";
+    private Component graphStatus = Component.empty();
     private long statusExpiresAt;
     private QuestDefinition graphDraft;
     private final QuestGraphContextMenu contextMenu = new QuestGraphContextMenu();
@@ -96,11 +96,11 @@ public class QuestScreen extends Screen
             }));
         fitButton.setHeight(16);
         editorButton = addRenderableWidget(new QuestButton(panelLeft + panelWidth - 93, panelTop + 6,
-            60, Component.literal(isEditing ? "完成编辑" : "编辑"), button -> toggleEditing()));
+            60, Component.translatable(isEditing ? "circe.button.finish_editing" : "circe.button.edit"), button -> toggleEditing()));
         editorButton.setHeight(18);
         editorButton.visible = ClientQuestState.canEdit();
         settingsButton = addRenderableWidget(new QuestButton(panelLeft + panelWidth - 145, panelTop + 6,
-            46, Component.literal("设置"), button -> minecraft.setScreen(new QuestSettingsScreen(this))));
+            46, Component.translatable("circe.button.settings"), button -> minecraft.setScreen(new QuestSettingsScreen(this))));
         settingsButton.setHeight(18);
         popup = new QuestDetailsPopup();
         popup.buttons().forEach(this::addRenderableWidget);
@@ -120,7 +120,7 @@ public class QuestScreen extends Screen
             prerequisiteTarget = null;
             contextMenu.close();
             clearDraft();
-            editorButton.setMessage(Component.literal("编辑"));
+            editorButton.setMessage(Component.translatable("circe.button.edit"));
         }
         if (isPendingGraphEdit && observedEditResult != ClientQuestState.editResultSequence())
         {
@@ -138,7 +138,7 @@ public class QuestScreen extends Screen
             draggedQuest = null;
             hasMovedNode = false;
             graph.setDefinitions(chapterQuests(), selectedQuest, false);
-            showStatus("服务端已更新，此次拖动已取消。");
+            showStatus(Component.translatable("circe.graph.drag_cancelled"));
         }
         List<QuestDefinition> definitions = ClientQuestState.definitions();
         List<String> chapterIds = ClientQuestState.chapters().stream().map(chapter -> chapter.id()).toList();
@@ -209,9 +209,9 @@ public class QuestScreen extends Screen
             graphics.pose().popPose();
         }
         contextMenu.render(graphics, font, localMouseX, localMouseY);
-        if (!graphStatus.isBlank() && (Util.getMillis() < statusExpiresAt || isPendingGraphEdit || prerequisiteTarget != null))
+        if (!graphStatus.getString().isBlank() && (Util.getMillis() < statusExpiresAt || isPendingGraphEdit || prerequisiteTarget != null))
         {
-            graphics.drawString(font, QuestTheme.fit(font, Component.literal(graphStatus), panelWidth - sidebarWidth - 20),
+            graphics.drawString(font, QuestTheme.fit(font, graphStatus, panelWidth - sidebarWidth - 20),
                 graphLeft() + 8, panelTop + panelHeight - 19, QuestTheme.gold(), false);
         }
         graphics.pose().popPose();
@@ -231,7 +231,8 @@ public class QuestScreen extends Screen
         }
         graphics.renderItem(new ItemStack(Items.BOOK),
             panelLeft + 10, panelTop + 7);
-        graphics.drawString(font, QuestTheme.fit(font, Component.literal((isEditing ? "编辑模式 · " : "") + ClientQuestState.bookTitle()), panelWidth - 188),
+        graphics.drawString(font, QuestTheme.fit(font, isEditing ? Component.translatable("circe.graph.edit_title", Component.translatable(ClientQuestState.bookTitle()))
+            : Component.translatable(ClientQuestState.bookTitle()), panelWidth - 188),
             panelLeft + 32, panelTop + 12, QuestTheme.text(), false);
         graphics.fill(panelLeft + 1, panelTop + HEADER_HEIGHT - 1,
             panelLeft + panelWidth - 1, panelTop + HEADER_HEIGHT, QuestTheme.border());
@@ -546,11 +547,16 @@ public class QuestScreen extends Screen
         prerequisiteTarget = null;
         draggedQuest = null;
         isDraggingGraph = false;
-        editorButton.setMessage(Component.literal(isEditing ? "完成编辑" : "编辑"));
+        editorButton.setMessage(Component.translatable(isEditing ? "circe.button.finish_editing" : "circe.button.edit"));
         showStatus("");
     }
 
     private void showStatus(String message)
+    {
+        showStatus(Component.literal(message));
+    }
+
+    private void showStatus(Component message)
     {
         graphStatus = message;
         statusExpiresAt = Util.getMillis() + 6000;
@@ -565,7 +571,7 @@ public class QuestScreen extends Screen
         observedEditResult = ClientQuestState.editResultSequence();
         shouldFitAfterEdit = operation.equals("auto_layout");
         isPendingGraphEdit = true;
-        showStatus("正在保存到服务端…");
+        showStatus(Component.translatable("circe.editor.saving_server"));
         PacketDistributor.sendToServer(new EditPayload(operation, id, json, revision));
     }
 
@@ -657,7 +663,7 @@ public class QuestScreen extends Screen
             if (hit == null)
             {
                 var position = graph.positionAt(mouseX, mouseY);
-                actions.add(new QuestGraphContextMenu.Action("＋ 新建任务", () ->
+                actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.button.new_quest"), () ->
                 {
                     if (selectedChapter == null)
                     {
@@ -670,8 +676,8 @@ public class QuestScreen extends Screen
                 {
                     String chapter = selectedChapter;
                     long revision = ClientQuestState.bookRevision();
-                    actions.add(new QuestGraphContextMenu.Action("自动整理本章", () -> minecraft.setScreen(
-                        new QuestGraphConfirmScreen(this, "自动整理", "清除本章所有手动位置，恢复依赖关系自动排列。任务内容和玩家进度保持不变。",
+                    actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.graph.arrange_chapter"), () -> minecraft.setScreen(
+                        new QuestGraphConfirmScreen(this, Component.translatable("circe.graph.arrange"), Component.translatable("circe.graph.arrange_confirm"),
                             true, () -> sendGraphEdit("auto_layout", chapter, "", revision)))));
                 }
             }
@@ -686,17 +692,17 @@ public class QuestScreen extends Screen
             int index = ((int) mouseY - panelTop - HEADER_HEIGHT - 22 + chapterScroll) / CHAPTER_ROW_HEIGHT;
             String chapter = mouseY >= panelTop + HEADER_HEIGHT + 22 && index >= 0 && index < chapters.size()
                 ? chapters.get(index) : null;
-            actions.add(new QuestGraphContextMenu.Action("＋ 新建章节", () -> minecraft.setScreen(new QuestChapterEditorScreen(this))));
+            actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.button.new_chapter"), () -> minecraft.setScreen(new QuestChapterEditorScreen(this))));
             if (chapter != null)
             {
-                actions.add(new QuestGraphContextMenu.Action("编辑章节", () -> minecraft.setScreen(new QuestChapterEditorScreen(this, chapter))));
-                actions.add(new QuestGraphContextMenu.Action("删除章节", () -> confirmDeleteChapter(chapter)));
+                actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.button.edit_chapter"), () -> minecraft.setScreen(new QuestChapterEditorScreen(this, chapter))));
+                actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.button.delete_chapter"), () -> confirmDeleteChapter(chapter)));
             }
         }
         else if (mouseX >= panelLeft && mouseX < panelLeft + panelWidth
             && mouseY >= panelTop && mouseY < panelTop + HEADER_HEIGHT)
         {
-            actions.add(new QuestGraphContextMenu.Action("修改任务书标题", () -> minecraft.setScreen(new QuestTitleEditorScreen(this))));
+            actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.editor.book_title"), () -> minecraft.setScreen(new QuestTitleEditorScreen(this))));
         }
         contextMenu.open((int) mouseX, (int) mouseY, panelLeft + 2, panelTop + 3,
             panelLeft + panelWidth - 2, panelTop + panelHeight - 2, actions);
@@ -706,34 +712,34 @@ public class QuestScreen extends Screen
     {
         selectedQuest = id;
         QuestDefinition definition = ClientQuestState.definition(id);
-        actions.add(new QuestGraphContextMenu.Action("编辑任务", () -> openTaskEditor(id)));
-        actions.add(new QuestGraphContextMenu.Action("复制任务", () ->
+        actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.button.edit_quest"), () -> openTaskEditor(id)));
+        actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.button.copy_quest"), () ->
         {
             var position = graph.position(id);
             var offset = new QuestDefinition.GraphPosition(Math.min(10000, position.x() + 48), Math.min(10000, position.y() + 48));
             minecraft.setScreen(QuestEditorScreen.graphDraft(this, definition.chapter(), offset, definition));
         }));
-        actions.add(new QuestGraphContextMenu.Action("添加前置任务", () ->
+        actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.button.add_prerequisite"), () ->
         {
             prerequisiteTarget = id;
-            showStatus("点击一个任务，作为“" + Component.translatable(definition.title()).getString() + "”的前置；Esc 取消。");
+            showStatus(Component.translatable("circe.graph.pick_prerequisite", Component.translatable(definition.title())));
         }));
         if (!definition.prerequisites().isEmpty())
         {
-            actions.add(new QuestGraphContextMenu.Action("清除前置任务", () -> confirmClearPrerequisites(definition)));
+            actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.button.clear_prerequisites"), () -> confirmClearPrerequisites(definition)));
         }
-        actions.add(new QuestGraphContextMenu.Action("删除任务", () -> confirmDeleteTask(definition)));
+        actions.add(new QuestGraphContextMenu.Action(Component.translatable("circe.button.delete_quest"), () -> confirmDeleteTask(definition)));
     }
 
     private void confirmDeleteTask(QuestDefinition definition)
     {
         var dependents = knownDefinitions.stream().filter(quest -> quest.prerequisites().contains(definition.id())).toList();
-        String message = dependents.isEmpty()
-            ? "删除任务“" + Component.translatable(definition.title()).getString() + "”？任务将从服务端配置及所有玩家界面移除。此操作不能在界面撤销。"
-            : "有 " + dependents.size() + " 个任务以此任务为前置，暂不能删除。请先修改依赖：\n"
-                + String.join("\n", dependents.stream().map(quest -> quest.id().toString()).toList());
+        Component message = dependents.isEmpty()
+            ? Component.translatable("circe.graph.delete_quest_confirm", Component.translatable(definition.title()))
+            : Component.translatable("circe.graph.delete_blocked", dependents.size(),
+                String.join("\n", dependents.stream().map(quest -> quest.id().toString()).toList()));
         long revision = ClientQuestState.bookRevision();
-        minecraft.setScreen(new QuestGraphConfirmScreen(this, "删除任务", message, dependents.isEmpty(),
+        minecraft.setScreen(new QuestGraphConfirmScreen(this, Component.translatable("circe.button.delete_quest"), message, dependents.isEmpty(),
             () -> sendGraphEdit("delete", definition.id().toString(), "", revision)));
     }
 
@@ -741,9 +747,9 @@ public class QuestScreen extends Screen
     {
         long count = knownDefinitions.stream().filter(quest -> quest.chapter().equals(chapter)).count();
         long revision = ClientQuestState.bookRevision();
-        String message = count == 0 ? "删除空章节“" + chapter + "”？此操作不能在界面撤销。"
-            : "此章节还有 " + count + " 个任务。请先移动或删除任务，再删除章节。";
-        minecraft.setScreen(new QuestGraphConfirmScreen(this, "删除章节", message, count == 0,
+        Component message = count == 0 ? Component.translatable("circe.graph.delete_chapter_confirm", chapter)
+            : Component.translatable("circe.graph.chapter_not_empty", count);
+        minecraft.setScreen(new QuestGraphConfirmScreen(this, Component.translatable("circe.button.delete_chapter"), message, count == 0,
             () -> sendGraphEdit("chapter_delete", chapter, "", revision)));
     }
 
@@ -753,8 +759,8 @@ public class QuestScreen extends Screen
         updated.add("prerequisites", new JsonArray());
         updated.addProperty("revision", definition.revision() + 1);
         long revision = ClientQuestState.bookRevision();
-        minecraft.setScreen(new QuestGraphConfirmScreen(this, "清除前置关系",
-            "清除该任务的全部前置关系。任务版本将增加，已有玩家的该任务进度会重置。", true,
+        minecraft.setScreen(new QuestGraphConfirmScreen(this, Component.translatable("circe.graph.clear_prerequisites"),
+            Component.translatable("circe.graph.clear_confirm"), true,
             () -> sendGraphEdit("save", definition.id().toString(), updated.toString(), revision)));
     }
 
@@ -768,7 +774,7 @@ public class QuestScreen extends Screen
         }
         if (definition.id().equals(prerequisite) || definition.prerequisites().contains(prerequisite))
         {
-            showStatus("不能选择自身或重复的前置任务，请重新选择。");
+            showStatus(Component.translatable("circe.graph.invalid_prerequisite"));
             return;
         }
         prerequisiteTarget = null;
@@ -776,8 +782,8 @@ public class QuestScreen extends Screen
         updated.getAsJsonArray("prerequisites").add(prerequisite.toString());
         updated.addProperty("revision", definition.revision() + 1);
         long revision = ClientQuestState.bookRevision();
-        minecraft.setScreen(new QuestGraphConfirmScreen(this, "添加前置关系",
-            "将 " + prerequisite + " 设为 " + definition.id() + " 的前置任务。目标任务版本将增加，已有进度会重置。服务端会拒绝循环依赖。", true,
+        minecraft.setScreen(new QuestGraphConfirmScreen(this, Component.translatable("circe.graph.add_prerequisite"),
+            Component.translatable("circe.graph.add_confirm", prerequisite, definition.id()), true,
             () -> sendGraphEdit("save", definition.id().toString(), updated.toString(), revision)));
     }
 

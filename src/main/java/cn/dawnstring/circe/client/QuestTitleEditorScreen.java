@@ -2,6 +2,7 @@ package cn.dawnstring.circe.client;
 
 import cn.dawnstring.circe.network.EditPayload;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class QuestTitleEditorScreen extends QuestEditingScreen
@@ -14,7 +15,7 @@ public final class QuestTitleEditorScreen extends QuestEditingScreen
 
     public QuestTitleEditorScreen(net.minecraft.client.gui.screens.Screen parent)
     {
-        super(parent, "修改任务书标题");
+        super(parent, "circe.editor.book_title");
         editedTitle = ClientQuestState.bookTitle();
         baselineRevision = ClientQuestState.bookRevision();
     }
@@ -23,23 +24,23 @@ public final class QuestTitleEditorScreen extends QuestEditingScreen
     protected void initEditor()
     {
         titleField = field(frameLeft + 24, frameTop + 78, frameWidth - 48,
-            "任务界面左上角的标题", editedTitle, 128);
+            QuestTranslations.text("circe.editor.book_title_hint"), editedTitle, 128);
         titleField.setResponder(value -> editedTitle = value);
-        button(frameLeft + 24, frameTop + 118, 70, "保存标题", this::save);
-        button(frameLeft + 102, frameTop + 118, 70, "取消", this::onClose);
+        button(frameLeft + 24, frameTop + 118, 70, QuestTranslations.text("circe.button.save_title"), this::save);
+        button(frameLeft + 102, frameTop + 118, 70, QuestTranslations.text("circe.button.cancel"), this::onClose);
     }
 
     private void save()
     {
         if (isPending || editedTitle.isBlank())
         {
-            status = "请输入标题";
+            status = Component.translatable("circe.error.title_empty");
             return;
         }
         isPending = true;
         observedResult = ClientQuestState.editResultSequence();
         PacketDistributor.sendToServer(new EditPayload("title", "", editedTitle, baselineRevision));
-        status = "正在保存…";
+        status = Component.translatable("circe.editor.saving");
     }
 
     @Override

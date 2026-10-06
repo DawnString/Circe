@@ -1,5 +1,6 @@
 package cn.dawnstring.circe.quest;
 
+import cn.dawnstring.circe.api.QuestConfigSchema;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.HolderLookup;
@@ -8,10 +9,10 @@ import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import cn.dawnstring.circe.api.QuestConfigSchema;
 
 public final class RewardType
 {
@@ -23,10 +24,10 @@ public final class RewardType
     }
 
     private static final Map<String, RewardType> TYPES = new LinkedHashMap<>();
-    public static final RewardType ITEM = register("circe:item", "普通物品", true, 64, itemHandler());
-    public static final RewardType SPECIAL_ITEM = register("circe:special_item", "特殊物品（组件）", true, 64, itemHandler());
-    public static final RewardType EXPERIENCE = register("circe:experience", "经验值", false, 1_000_000, experienceHandler(false));
-    public static final RewardType LEVELS = register("circe:levels", "经验等级", false, 1000, experienceHandler(true));
+    public static final RewardType ITEM = register("circe:item", "circe.reward.item", true, 64, itemHandler());
+    public static final RewardType SPECIAL_ITEM = register("circe:special_item", "circe.reward.special_item", true, 64, itemHandler());
+    public static final RewardType EXPERIENCE = register("circe:experience", "circe.reward.experience", false, 1_000_000, experienceHandler(false));
+    public static final RewardType LEVELS = register("circe:levels", "circe.reward.levels", false, 1000, experienceHandler(true));
     private final String id;
     private final String title;
     private final boolean hasItem;
@@ -67,7 +68,7 @@ public final class RewardType
         RewardType type = TYPES.get(normalized);
         if (type == null)
         {
-            throw new IllegalArgumentException("未注册的奖励类型 " + id);
+            throw new QuestValidationException("circe.validation.reward_type", id);
         }
         return type;
     }
@@ -82,6 +83,7 @@ public final class RewardType
         return id;
     }
 
+    /** 显示名称的翻译键或原文，由客户端解析。 */
     public String title()
     {
         return title;
@@ -125,7 +127,7 @@ public final class RewardType
             {
                 if (!BuiltInRegistries.ITEM.containsKey(reward.item()) || reward.item().getPath().equals("air"))
                 {
-                    throw new IllegalArgumentException("未知奖励物品 " + reward.item());
+                    throw new QuestValidationException("circe.validation.reward_item", reward.item());
                 }
                 stack(reward, lookup);
             }

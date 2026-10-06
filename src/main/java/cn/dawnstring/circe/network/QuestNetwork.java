@@ -1,6 +1,8 @@
 package cn.dawnstring.circe.network;
 
 import cn.dawnstring.circe.quest.QuestService;
+import cn.dawnstring.circe.quest.QuestValidationException;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
@@ -30,7 +32,7 @@ public final class QuestNetwork
 
     public static void register(RegisterPayloadHandlersEvent event)
     {
-        var registrar = event.registrar("7");
+        var registrar = event.registrar("8");
         registrar.playToClient(CompletionPayload.TYPE, CompletionPayload.STREAM_CODEC, (payload, context) -> completionReceiver.accept(payload));
         registrar.playToClient(ImageDataPayload.TYPE, ImageDataPayload.STREAM_CODEC, (payload, context) -> imageReceiver.accept(payload));
         registrar.playToServer(ImageUploadPayload.TYPE, ImageUploadPayload.STREAM_CODEC, (payload, context) ->
@@ -46,7 +48,9 @@ public final class QuestNetwork
             }
             catch (Exception exception)
             {
-                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, new EditResultPayload(false, "图片导入失败：" + exception.getMessage()));
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, new EditResultPayload(false,
+                    Component.translatable("circe.error.import",
+                        QuestValidationException.message(exception))));
             }
         });
         registrar.playToServer(ImageRequestPayload.TYPE, ImageRequestPayload.STREAM_CODEC, (payload, context) ->

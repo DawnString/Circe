@@ -4,8 +4,8 @@ import cn.dawnstring.circe.network.ActionPayload;
 import cn.dawnstring.circe.quest.ObjectiveType;
 import cn.dawnstring.circe.quest.QuestDefinition;
 import cn.dawnstring.circe.quest.RewardType;
-import net.minecraft.client.Minecraft;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -232,7 +232,7 @@ public final class QuestDetailsPopup
             graphics.renderItem(stack, left + 9, cursorY + 5);
             Component rewardLabel = reward.type().hasItem()
                 ? stack.getHoverName().copy().append(" ×" + reward.count())
-                : Component.literal(reward.type().title() + " +" + reward.count());
+                : Component.translatable(reward.type().title()).append(" +" + reward.count());
             String label = QuestTheme.fit(font, rewardLabel, width - 44);
             graphics.drawString(font, label, left + 30, cursorY + 9, QuestTheme.gold(), false);
             cursorY += 23;

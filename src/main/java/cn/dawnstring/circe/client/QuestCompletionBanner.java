@@ -7,6 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+
 import java.util.ArrayDeque;
 
 public final class QuestCompletionBanner
@@ -66,7 +67,7 @@ public final class QuestCompletionBanner
         QuestTheme.fill(graphics, center - 141, top + 1, center + 141, top + 42, QuestTheme.surface());
         graphics.fill(center - 141, top + 1, center - 99, top + 42, QuestTheme.selected());
         QuestTheme.centered(graphics, minecraft.font, "✦", center - 120, top + 14, QuestTheme.gold());
-        graphics.drawString(minecraft.font, "任务达成", center - 89, top + 8, QuestTheme.gold(), false);
+        graphics.drawString(minecraft.font, QuestTranslations.text("circe.banner.completed"), center - 89, top + 8, QuestTheme.gold(), false);
         graphics.drawString(minecraft.font, QuestTheme.fit(minecraft.font, Component.translatable(current.title()), 212),
             center - 89, top + 24, QuestTheme.text(), false);
         for (int index = 0; QuestUiSettings.current().hasAnimations() && index < 12; index++)

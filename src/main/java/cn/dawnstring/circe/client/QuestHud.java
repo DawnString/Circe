@@ -1,13 +1,13 @@
 package cn.dawnstring.circe.client;
 
-import cn.dawnstring.circe.quest.QuestDefinition;
 import cn.dawnstring.circe.quest.ObjectiveType;
+import cn.dawnstring.circe.quest.QuestDefinition;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.client.gui.screens.PauseScreen;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import java.util.Comparator;
@@ -19,9 +19,9 @@ public final class QuestHud
     private static final int CARD_WIDTH = 154;
     private static final int MAX_OBJECTIVES = 3;
     private static final QuestDefinition PREVIEW = new QuestDefinition(
-        ResourceLocation.parse("circe:hud_preview"), 1, "", 0, "任务追踪预览", "拖动卡片设置显示位置", "",
+        ResourceLocation.parse("circe:hud_preview"), 1, "", 0, "circe.hud.preview_title", "circe.hud.preview_description", "",
         List.of(), List.of(new QuestDefinition.Objective("preview", ObjectiveType.HOLD,
-            ResourceLocation.parse("minecraft:oak_log"), 16, "收集橡木原木")), List.of());
+            ResourceLocation.parse("minecraft:oak_log"), 16, "circe.hud.preview_objective")), List.of());
 
     public record Bounds(float left, float top, float width, float height)
     {

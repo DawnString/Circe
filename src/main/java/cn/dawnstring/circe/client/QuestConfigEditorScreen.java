@@ -1,10 +1,12 @@
 package cn.dawnstring.circe.client;
 
 import cn.dawnstring.circe.api.QuestConfigSchema;
+import cn.dawnstring.circe.quest.QuestValidationException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,7 +22,7 @@ public final class QuestConfigEditorScreen extends QuestEditingScreen
 
     public QuestConfigEditorScreen(Screen parent, QuestConfigSchema schema, JsonObject configuration, Consumer<JsonObject> onSave)
     {
-        super(parent, "扩展类型配置");
+        super(parent, "circe.editor.extension");
         this.schema = schema;
         this.onSave = onSave;
         draft = schema.normalize(configuration);
@@ -36,14 +38,14 @@ public final class QuestConfigEditorScreen extends QuestEditingScreen
             var descriptor = schema.fields().get(page * PAGE_SIZE + index);
             addField(descriptor, left, frameTop + 56 + index * 44, width);
         }
-        button(left, frameTop + frameHeight - 26, 70, "保存配置", this::save).primary();
-        button(left + 78, frameTop + frameHeight - 26, 70, "取消", this::onClose);
-        button(frameLeft + frameWidth - 180, frameTop + frameHeight - 26, 70, "上一页", () ->
+        button(left, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.save_config"), this::save).primary();
+        button(left + 78, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.cancel"), this::onClose);
+        button(frameLeft + frameWidth - 180, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.previous"), () ->
         {
             page = Math.max(0, page - 1);
             rebuild();
         });
-        button(frameLeft + frameWidth - 102, frameTop + frameHeight - 26, 70, "下一页", () ->
+        button(frameLeft + frameWidth - 102, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.next"), () ->
         {
             page = Math.min((schema.fields().size() - 1) / PAGE_SIZE, page + 1);
             rebuild();
@@ -52,12 +54,12 @@ public final class QuestConfigEditorScreen extends QuestEditingScreen
 
     private void addField(QuestConfigSchema.Field descriptor, int left, int top, int width)
     {
-        String title = descriptor.title() + (descriptor.unit().isBlank() ? "" : "（" + descriptor.unit() + "）");
+        String title = QuestTranslations.text(descriptor.title()) + (descriptor.unit().isBlank() ? "" : " (" + QuestTranslations.text(descriptor.unit()) + ")");
         if (descriptor.kind() == QuestConfigSchema.Kind.BOOLEAN || descriptor.kind() == QuestConfigSchema.Kind.CHOICE)
         {
             label(title, left, top - 12);
             List<QuestDropdown.Option> options = descriptor.kind() == QuestConfigSchema.Kind.BOOLEAN
-                ? List.of(new QuestDropdown.Option("true", "是"), new QuestDropdown.Option("false", "否"))
+                ? List.of(new QuestDropdown.Option("true", "circe.option.yes"), new QuestDropdown.Option("false", "circe.option.no"))
                 : descriptor.options().stream().map(option -> new QuestDropdown.Option(option.id(), option.title())).toList();
             addRenderableWidget(new QuestDropdown(left, top, width, options, draft.get(descriptor.key()).getAsString(), value ->
                 draft.add(descriptor.key(), descriptor.kind() == QuestConfigSchema.Kind.BOOLEAN
@@ -71,7 +73,7 @@ public final class QuestConfigEditorScreen extends QuestEditingScreen
         input.setResponder(value -> draft.addProperty(descriptor.key(), value));
         if (hasPicker)
         {
-            button(left + width - 82, top, 82, "选择资源", () -> minecraft.setScreen(
+            button(left + width - 82, top, 82, QuestTranslations.text("circe.button.pick_resource"), () -> minecraft.setScreen(
                 new QuestItemPickerScreen(this, descriptor.kind(), id -> draft.addProperty(descriptor.key(), id.toString()))));
         }
     }
@@ -93,14 +95,14 @@ public final class QuestConfigEditorScreen extends QuestEditingScreen
         }
         catch (RuntimeException exception)
         {
-            status = "配置无效：" + exception.getMessage();
+            status = Component.translatable("circe.error.config_invalid", QuestValidationException.message(exception));
         }
     }
 
     @Override
     protected void renderContent(GuiGraphics graphics)
     {
-        graphics.drawString(font, "第 " + (page + 1) + " / " + Math.max(1, (schema.fields().size() + PAGE_SIZE - 1) / PAGE_SIZE)
-            + " 页 · " + schema.fields().size() + " 个字段", frameLeft + 24, frameTop + frameHeight - 72, QuestTheme.muted(), false);
+        graphics.drawString(font, QuestTranslations.text("circe.editor.config_pages", page + 1,
+            Math.max(1, (schema.fields().size() + PAGE_SIZE - 1) / PAGE_SIZE), schema.fields().size()), frameLeft + 24, frameTop + frameHeight - 72, QuestTheme.muted(), false);
     }
 }

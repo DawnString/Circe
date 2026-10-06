@@ -3,6 +3,7 @@ package cn.dawnstring.circe.client;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -16,10 +17,11 @@ public abstract class QuestEditingScreen extends Screen
     protected int frameWidth;
     protected int frameHeight;
     protected float uiScale;
-    protected String status = "";
+    protected Component status = Component.empty();
     protected int pointerX;
     protected int pointerY;
     private final List<Label> labels = new ArrayList<>();
+    private Language language;
 
     private record Label(String text, int x, int y)
     {
@@ -27,13 +29,19 @@ public abstract class QuestEditingScreen extends Screen
 
     protected QuestEditingScreen(Screen parent, String title)
     {
-        super(Component.literal(title));
+        this(parent, Component.translatable(title));
+    }
+
+    protected QuestEditingScreen(Screen parent, Component title)
+    {
+        super(title);
         this.parent = parent;
     }
 
     @Override
     protected final void init()
     {
+        language = Language.getInstance();
         uiScale = height / 540.0F;
         int viewWidth = Math.round(width / uiScale);
         frameWidth = (int) (viewWidth * 0.8);
@@ -108,7 +116,7 @@ public abstract class QuestEditingScreen extends Screen
         renderables.stream().filter(renderable -> renderable instanceof QuestDropdown)
             .forEach(renderable -> renderable.render(graphics, pointerX, pointerY, partialTick));
         int statusY = frameTop + frameHeight - 46;
-        for (var line : font.split(Component.literal(status), frameWidth - 24))
+        for (var line : font.split(status, frameWidth - 24))
         {
             graphics.drawString(font, line, frameLeft + 12, statusY, QuestTheme.gold(), false);
             statusY += 10;
@@ -179,6 +187,45 @@ public abstract class QuestEditingScreen extends Screen
         if (!ClientQuestState.canEdit())
         {
             minecraft.setScreen(new QuestScreen());
+            return;
+        }
+        if (language != Language.getInstance())
+        {
+            refreshLanguage();
+        }
+    }
+
+    private void refreshLanguage()
+    {
+        // 重建翻译后的控件时保留原始输入，包括尚未通过校验的草稿。
+        List<String> inputs = new ArrayList<>();
+        for (var child : children())
+        {
+            if (child instanceof EditBox field)
+            {
+                inputs.add(field.getValue());
+            }
+            else if (child instanceof QuestMultilineEditBox field)
+            {
+                inputs.add(field.getValue());
+            }
+        }
+        rebuild();
+        int index = 0;
+        for (var child : children())
+        {
+            if (index >= inputs.size())
+            {
+                break;
+            }
+            if (child instanceof EditBox field)
+            {
+                field.setValue(inputs.get(index++));
+            }
+            else if (child instanceof QuestMultilineEditBox field)
+            {
+                field.setValue(inputs.get(index++));
+            }
         }
     }
 

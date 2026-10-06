@@ -5,11 +5,11 @@ import net.minecraft.network.chat.Component;
 
 public final class QuestGraphConfirmScreen extends QuestEditingScreen
 {
-    private final String message;
+    private final Component message;
     private final Runnable onConfirm;
     private final boolean canConfirm;
 
-    public QuestGraphConfirmScreen(QuestScreen parent, String title, String message, boolean canConfirm, Runnable onConfirm)
+    public QuestGraphConfirmScreen(QuestScreen parent, Component title, Component message, boolean canConfirm, Runnable onConfirm)
     {
         super(parent, title);
         this.message = message;
@@ -29,19 +29,19 @@ public final class QuestGraphConfirmScreen extends QuestEditingScreen
     @Override
     protected void initEditor()
     {
-        button(frameLeft + 24, frameTop + frameHeight - 26, 80, "确认操作", () ->
+        button(frameLeft + 24, frameTop + frameHeight - 26, 80, QuestTranslations.text("circe.button.confirm_action"), () ->
         {
             onConfirm.run();
             onClose();
         }).primary().active = canConfirm;
-        button(frameLeft + 112, frameTop + frameHeight - 26, 70, "返回", this::onClose);
+        button(frameLeft + 112, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.back"), this::onClose);
     }
 
     @Override
     protected void renderContent(GuiGraphics graphics)
     {
         int top = frameTop + 54;
-        for (var line : font.split(Component.literal(message), frameWidth - 48))
+        for (var line : font.split(message, frameWidth - 48))
         {
             if (top > frameTop + frameHeight - 68)
             {

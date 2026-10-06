@@ -2,8 +2,11 @@ package cn.dawnstring.circe.client;
 
 import cn.dawnstring.circe.network.EditPayload;
 import cn.dawnstring.circe.quest.ChapterDefinition;
-import net.neoforged.neoforge.network.PacketDistributor;
+import cn.dawnstring.circe.quest.QuestValidationException;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.PacketDistributor;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -24,7 +27,7 @@ public final class QuestChapterEditorScreen extends QuestEditingScreen
 
     public QuestChapterEditorScreen(net.minecraft.client.gui.screens.Screen parent, String chapterId)
     {
-        super(parent, "章节管理");
+        super(parent, "circe.editor.chapters");
         createDraft();
         if (chapterId != null && ClientQuestState.chapter(chapterId) != null)
         {
@@ -52,7 +55,7 @@ public final class QuestChapterEditorScreen extends QuestEditingScreen
             suffix++;
         }
         values.put("id", "circe:chapter_" + suffix);
-        values.put("title", "新章节");
+        values.put("title", QuestTranslations.text("circe.editor.new_chapter"));
         values.put("order", Integer.toString(ClientQuestState.chapters().size()));
         values.put("icon", "minecraft:book");
         baseline = ClientQuestState.bookRevision();
@@ -62,7 +65,7 @@ public final class QuestChapterEditorScreen extends QuestEditingScreen
     @Override
     protected void initEditor()
     {
-        button(frameLeft + 12, frameTop + 43, 148, "＋ 新建章节", () ->
+        button(frameLeft + 12, frameTop + 43, 148, QuestTranslations.text("circe.button.new_chapter"), () ->
         {
             createDraft();
             rebuild();
@@ -73,35 +76,35 @@ public final class QuestChapterEditorScreen extends QuestEditingScreen
         {
             ChapterDefinition chapter = chapters.get(index);
             button(frameLeft + 12, frameTop + 74 + (index % 10) * 26, 148,
-                net.minecraft.network.chat.Component.translatable(chapter.title()).getString(), () ->
+                Component.translatable(chapter.title()).getString(), () ->
                 {
                     select(chapter);
                     rebuild();
                 });
         }
-        button(frameLeft + 12, frameTop + 342, 70, "上一页", () ->
+        button(frameLeft + 12, frameTop + 342, 70, QuestTranslations.text("circe.button.previous"), () ->
         {
             listPage--;
             rebuild();
         });
-        button(frameLeft + 90, frameTop + 342, 70, "下一页", () ->
+        button(frameLeft + 90, frameTop + 342, 70, QuestTranslations.text("circe.button.next"), () ->
         {
             listPage++;
             rebuild();
         });
         int left = frameLeft + 182;
         int width = frameWidth - 200;
-        bind("id", left, frameTop + 61, width, "章节 ID（保存后固定）").setEditable(originalId == null);
-        bind("title", left, frameTop + 108, width, "章节标题");
-        bind("order", left, frameTop + 155, width, "章节排序");
-        bind("icon", left, frameTop + 202, width - 82, "章节图标");
-        button(left + width - 74, frameTop + 202, 74, "选择物品", () ->
+        bind("id", left, frameTop + 61, width, QuestTranslations.text("circe.editor.chapter_id")).setEditable(originalId == null);
+        bind("title", left, frameTop + 108, width, QuestTranslations.text("circe.editor.chapter_title"));
+        bind("order", left, frameTop + 155, width, QuestTranslations.text("circe.editor.chapter_order"));
+        bind("icon", left, frameTop + 202, width - 82, QuestTranslations.text("circe.editor.chapter_icon"));
+        button(left + width - 74, frameTop + 202, 74, QuestTranslations.text("circe.button.pick_item"), () ->
             minecraft.setScreen(new QuestItemPickerScreen(this, false, id -> values.put("icon", id.toString()))));
-        label("先创建章节，再在章节中添加任务。", left, frameTop + 245);
-        label("删除章节前，需要先移走或删除其中的任务。", left, frameTop + 261);
-        button(left, frameTop + frameHeight - 26, 76, "保存章节", () -> save(false)).primary();
-        button(left + 84, frameTop + frameHeight - 26, 76, "删除章节", () -> save(true));
-        button(left + 168, frameTop + frameHeight - 26, 68, "返回", this::onClose);
+        label(QuestTranslations.text("circe.editor.chapter_hint"), left, frameTop + 245);
+        label(QuestTranslations.text("circe.editor.chapter_delete_hint"), left, frameTop + 261);
+        button(left, frameTop + frameHeight - 26, 76, QuestTranslations.text("circe.button.save_chapter"), () -> save(false)).primary();
+        button(left + 84, frameTop + frameHeight - 26, 76, QuestTranslations.text("circe.button.delete_chapter"), () -> save(true));
+        button(left + 168, frameTop + frameHeight - 26, 68, QuestTranslations.text("circe.button.back"), this::onClose);
     }
 
     private net.minecraft.client.gui.components.EditBox bind(String key, int x, int y, int width, String label)
@@ -120,7 +123,7 @@ public final class QuestChapterEditorScreen extends QuestEditingScreen
         if (isDelete && !shouldConfirmDelete)
         {
             shouldConfirmDelete = true;
-            status = "再次点击确认删除章节。";
+            status = Component.translatable("circe.editor.confirm_chapter_delete");
             return;
         }
         try
@@ -128,7 +131,7 @@ public final class QuestChapterEditorScreen extends QuestEditingScreen
             String id = values.get("id").trim();
             if (originalId == null && ClientQuestState.chapter(id) != null)
             {
-                throw new IllegalArgumentException("章节 ID 已存在");
+                throw new IllegalArgumentException(QuestTranslations.text("circe.error.chapter_exists"));
             }
             ChapterDefinition chapter = new ChapterDefinition(id, values.get("title"), Integer.parseInt(values.get("order")),
                 ResourceLocation.parse(values.get("icon")));
@@ -136,11 +139,11 @@ public final class QuestChapterEditorScreen extends QuestEditingScreen
             isPending = true;
             PacketDistributor.sendToServer(new EditPayload(isDelete ? "chapter_delete" : "chapter_save", id,
                 chapter.toJson().toString(), baseline));
-            status = "正在保存章节…";
+            status = Component.translatable("circe.editor.saving_chapter");
         }
         catch (RuntimeException exception)
         {
-            status = exception.getMessage();
+            status = QuestValidationException.message(exception);
         }
     }
 

@@ -20,7 +20,7 @@ public final class QuestHudPosition
         {
             if (!Double.isFinite(x) || !Double.isFinite(y) || x < 0 || x > 1 || y < 0 || y > 1)
             {
-                throw new IllegalArgumentException("HUD 位置必须在屏幕范围内");
+                throw new IllegalArgumentException(QuestTranslations.text("circe.error.hud_position"));
             }
         }
     }
@@ -53,7 +53,7 @@ public final class QuestHudPosition
         {
             if (Files.size(path()) > 4096)
             {
-                throw new IOException("HUD 配置文件过大");
+                throw new IOException(QuestTranslations.text("circe.error.hud_size"));
             }
             JsonObject json = JsonParser.parseString(Files.readString(path(), StandardCharsets.UTF_8)).getAsJsonObject();
             current = new Position(json.get("x").getAsDouble(), json.get("y").getAsDouble());

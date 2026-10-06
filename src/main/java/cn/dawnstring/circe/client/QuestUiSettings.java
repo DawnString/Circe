@@ -3,12 +3,13 @@ package cn.dawnstring.circe.client;
 import cn.dawnstring.circe.Circe;
 import com.google.gson.Gson;
 import net.neoforged.fml.loading.FMLPaths;
+
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.io.IOException;
 import java.util.function.UnaryOperator;
 
 public final class QuestUiSettings
@@ -23,7 +24,7 @@ public final class QuestUiSettings
                 || !Double.isFinite(opacity) || opacity < 0.8 || opacity > 1
                 || !Double.isFinite(graphZoom) || graphZoom < 0.8 || graphZoom > 1.5)
             {
-                throw new IllegalArgumentException("界面配置超出范围");
+                throw new IllegalArgumentException(QuestTranslations.text("circe.error.ui_range"));
             }
         }
     }
@@ -55,12 +56,12 @@ public final class QuestUiSettings
             {
                 if (Files.size(path()) > 4096)
                 {
-                    throw new IOException("界面配置文件过大");
+                    throw new IOException(QuestTranslations.text("circe.error.ui_size"));
                 }
                 Preferences loaded = GSON.fromJson(Files.readString(path(), StandardCharsets.UTF_8), Preferences.class);
                 if (loaded == null)
                 {
-                    throw new IOException("界面配置为空");
+                    throw new IOException(QuestTranslations.text("circe.error.ui_empty"));
                 }
                 current = loaded;
             }

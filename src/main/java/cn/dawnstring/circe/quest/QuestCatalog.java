@@ -1,27 +1,27 @@
 package cn.dawnstring.circe.quest;
 
 import cn.dawnstring.circe.Circe;
+import cn.dawnstring.circe.network.EditPayload;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonArray;
-import net.minecraft.util.GsonHelper;
-import cn.dawnstring.circe.network.EditPayload;
+import com.google.gson.JsonParser;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
+import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
 
+import java.io.Reader;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.io.Reader;
-import com.google.gson.JsonParser;
 
 public class QuestCatalog extends SimpleJsonResourceReloadListener
 {
@@ -93,7 +93,7 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
             if (loadedBook == null)
             {
                 loadedBook = new JsonObject();
-                loadedBook.addProperty("title", "CIRCE · 任务");
+                loadedBook.addProperty("title", "circe.screen.title");
                 loadedBook.addProperty("revision", 1L);
                 JsonObject overrides = new JsonObject();
                 candidate.forEach((id, definition) -> overrides.add(id.toString(), definition.toJson()));
@@ -139,7 +139,7 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
 
     public String title()
     {
-        return book == null ? "CIRCE · 任务" : GsonHelper.getAsString(book, "title");
+        return book == null ? "circe.screen.title" : GsonHelper.getAsString(book, "title");
     }
 
     public JsonObject chaptersJson()
@@ -182,11 +182,11 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
     {
         if (payload.revision() != revision())
         {
-            throw new IllegalArgumentException("任务书已被更新，请返回后重新打开编辑器");
+            throw new IllegalArgumentException("circe.validation.book_changed");
         }
         if (!book.equals(QuestBookStore.read()))
         {
-            throw new IllegalArgumentException("外部任务书已被修改，请重新加载后再编辑");
+            throw new IllegalArgumentException("circe.validation.file_changed");
         }
         JsonObject candidateBook = book.deepCopy();
         JsonObject quests = candidateBook.getAsJsonObject("quests");
@@ -209,7 +209,7 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
                 QuestDefinition definition = definitions.get(id);
                 if (definition == null)
                 {
-                    throw new IllegalArgumentException("任务不存在");
+                    throw new IllegalArgumentException("circe.validation.quest_missing");
                 }
                 var position = QuestDefinition.GraphPosition.parse(JsonParser.parseString(payload.json()).getAsJsonObject());
                 JsonObject edited = definition.toJson();
@@ -220,7 +220,7 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
             {
                 if (!candidateBook.getAsJsonObject("chapters").has(payload.questId()))
                 {
-                    throw new IllegalArgumentException("章节不存在");
+                    throw new IllegalArgumentException("circe.validation.chapter_missing");
                 }
                 for (QuestDefinition definition : all())
                 {
@@ -243,7 +243,7 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
                     && (!sameObjectives(definition.objectives(), existing.objectives())
                     || !definition.prerequisites().equals(existing.prerequisites())))))
                 {
-                    throw new IllegalArgumentException("修改目标或前置条件时请增加任务版本，版本不能降低");
+                    throw new IllegalArgumentException("circe.validation.revision");
                 }
                 quests.add(id.toString(), edited);
                 deleted.remove(new com.google.gson.JsonPrimitive(id.toString()));
@@ -253,7 +253,7 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
                 ResourceLocation id = ResourceLocation.parse(payload.questId());
                 if (!definitions.containsKey(id))
                 {
-                    throw new IllegalArgumentException("任务不存在");
+                    throw new IllegalArgumentException("circe.validation.quest_missing");
                 }
                 quests.remove(id.toString());
                 if (!deleted.contains(new com.google.gson.JsonPrimitive(id.toString())))
@@ -261,7 +261,7 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
                     deleted.add(id.toString());
                 }
             }
-            default -> throw new IllegalArgumentException("未知编辑操作");
+            default -> throw new IllegalArgumentException("circe.validation.edit_action");
         }
         candidateBook.addProperty("revision", revision() + 1);
         Map<ResourceLocation, QuestDefinition> candidate = validateBook(candidateBook, baseDefinitions);
@@ -321,13 +321,13 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
         String title = GsonHelper.getAsString(book, "title");
         if (title.isBlank() || title.length() > 128 || GsonHelper.getAsLong(book, "revision", 1) < 1)
         {
-            throw new IllegalArgumentException("任务书标题应为 1..128 个字符，版本必须为正数");
+            throw new IllegalArgumentException("circe.validation.book_header");
         }
         Map<ResourceLocation, QuestDefinition> candidate = new LinkedHashMap<>(defaults);
         JsonObject quests = GsonHelper.getAsJsonObject(book, "quests");
         if (quests.size() > 128)
         {
-            throw new IllegalArgumentException("任务数量不能超过 128");
+            throw new IllegalArgumentException("circe.validation.quest_limit");
         }
         for (var entry : quests.entrySet())
         {
@@ -337,7 +337,7 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
         JsonArray deleted = GsonHelper.getAsJsonArray(book, "deleted");
         if (deleted.size() > 256)
         {
-            throw new IllegalArgumentException("删除记录不能超过 256 项");
+            throw new IllegalArgumentException("circe.validation.deletion_limit");
         }
         for (var entry : deleted)
         {
@@ -345,27 +345,27 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
         }
         if (candidate.size() > 128)
         {
-            throw new IllegalArgumentException("任务数量不能超过 128");
+            throw new IllegalArgumentException("circe.validation.quest_limit");
         }
         candidate.values().forEach(QuestCatalog::validateResources);
         JsonObject chapters = GsonHelper.getAsJsonObject(book, "chapters");
         if (chapters.size() > 64)
         {
-            throw new IllegalArgumentException("最多支持 64 个章节");
+            throw new IllegalArgumentException("circe.validation.chapter_limit");
         }
         for (var entry : chapters.entrySet())
         {
             ChapterDefinition chapter = ChapterDefinition.parse(entry.getKey(), entry.getValue().getAsJsonObject());
             if (!BuiltInRegistries.ITEM.containsKey(chapter.icon()))
             {
-                throw new IllegalArgumentException("章节图标物品不存在");
+                throw new IllegalArgumentException("circe.validation.chapter_icon");
             }
         }
         for (var definition : candidate.values())
         {
             if (!chapters.has(definition.chapter()))
             {
-                throw new IllegalArgumentException("请先创建章节，或移走章节内的任务后再删除章节");
+                throw new IllegalArgumentException("circe.validation.chapter_required");
             }
             if (!definition.image().isEmpty())
             {
@@ -376,7 +376,7 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
         validateGraph(candidate);
         if (serialize(candidate).length() + chapters.toString().length() > MAX_CATALOG_CHARACTERS - 2048)
         {
-            throw new IllegalArgumentException("任务书超过同步大小限制");
+            throw new IllegalArgumentException("circe.validation.book_size");
         }
         return candidate;
     }

@@ -8,9 +8,10 @@ import net.minecraft.client.gui.components.MultilineTextField;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.StringUtil;
-import java.util.function.Consumer;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public final class QuestMultilineEditBox extends MultiLineEditBox
 {

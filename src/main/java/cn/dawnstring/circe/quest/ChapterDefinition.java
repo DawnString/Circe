@@ -11,7 +11,7 @@ public record ChapterDefinition(String id, String title, int order, ResourceLoca
         String title = GsonHelper.getAsString(json, "title");
         if (id.isBlank() || id.length() > 256 || title.isBlank() || title.length() > 128)
         {
-            throw new IllegalArgumentException("章节 ID 或标题无效");
+            throw new IllegalArgumentException("circe.validation.chapter_identity");
         }
         return new ChapterDefinition(id, title, GsonHelper.getAsInt(json, "order", 0),
             ResourceLocation.parse(GsonHelper.getAsString(json, "icon", "minecraft:book")));

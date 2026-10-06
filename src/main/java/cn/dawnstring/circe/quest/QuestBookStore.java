@@ -49,7 +49,7 @@ public final class QuestBookStore
             String contents = new GsonBuilder().setPrettyPrinting().create().toJson(book);
             if (contents.getBytes(StandardCharsets.UTF_8).length > MAX_BOOK_BYTES)
             {
-                throw new IOException("任务书文件超过 1 MiB，无法保存");
+                throw new IOException("circe.validation.book_file_size");
             }
             Files.writeString(pendingPath, contents, StandardCharsets.UTF_8);
             if (Files.exists(path))

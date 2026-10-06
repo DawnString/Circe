@@ -1,21 +1,23 @@
 package cn.dawnstring.circe.client;
 
+import cn.dawnstring.circe.api.QuestConfigSchema;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SpawnEggItem;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
-import cn.dawnstring.circe.api.QuestConfigSchema;
 
 public final class QuestItemPickerScreen extends QuestEditingScreen
 {
-    private record Entry(ResourceLocation id, String name, ItemStack icon)
+    private record Entry(ResourceLocation id, Component name, ItemStack icon)
     {
     }
 
@@ -35,16 +37,16 @@ public final class QuestItemPickerScreen extends QuestEditingScreen
     {
         super(parent, switch (kind)
         {
-            case ENTITY -> "实体选择器";
-            case BLOCK -> "方块选择器";
-            case FLUID -> "流体选择器";
-            default -> "物品选择器";
+            case ENTITY -> "circe.picker.entity";
+            case BLOCK -> "circe.picker.block";
+            case FLUID -> "circe.picker.fluid";
+            default -> "circe.picker.item";
         });
         this.onSelect = onSelect;
         if (kind == QuestConfigSchema.Kind.BLOCK)
         {
             BuiltInRegistries.BLOCK.forEach(block -> entries.add(new Entry(BuiltInRegistries.BLOCK.getKey(block),
-                block.getName().getString(), new ItemStack(block.asItem() == Items.AIR ? Items.BOOK : block.asItem()))));
+                block.getName(), new ItemStack(block.asItem() == Items.AIR ? Items.BOOK : block.asItem()))));
         }
         else if (kind == QuestConfigSchema.Kind.FLUID)
         {
@@ -52,10 +54,10 @@ public final class QuestItemPickerScreen extends QuestEditingScreen
             {
                 var id = BuiltInRegistries.FLUID.getKey(fluid);
                 ItemStack icon = new ItemStack(fluid.getBucket() == Items.AIR ? Items.BUCKET : fluid.getBucket());
-                String name = fluid.getFluidType().getDescription().getString();
+                var name = fluid.getFluidType().getDescription().copy();
                 if (id.getPath().startsWith("flowing_"))
                 {
-                    name += "（流动）";
+                    name.append(Component.translatable("circe.picker.flowing"));
                 }
                 entries.add(new Entry(id, name, icon));
             });
@@ -65,7 +67,7 @@ public final class QuestItemPickerScreen extends QuestEditingScreen
             BuiltInRegistries.ENTITY_TYPE.forEach(type ->
             {
                 var egg = SpawnEggItem.byId(type);
-                entries.add(new Entry(BuiltInRegistries.ENTITY_TYPE.getKey(type), type.getDescription().getString(),
+                entries.add(new Entry(BuiltInRegistries.ENTITY_TYPE.getKey(type), type.getDescription(),
                     new ItemStack(egg == null ? Items.BOOK : egg)));
             });
         }
@@ -76,7 +78,7 @@ public final class QuestItemPickerScreen extends QuestEditingScreen
                 if (item != Items.AIR)
                 {
                     ItemStack stack = item.getDefaultInstance();
-                    entries.add(new Entry(BuiltInRegistries.ITEM.getKey(item), stack.getHoverName().getString(), stack));
+                    entries.add(new Entry(BuiltInRegistries.ITEM.getKey(item), stack.getHoverName(), stack));
                 }
             });
         }
@@ -88,7 +90,7 @@ public final class QuestItemPickerScreen extends QuestEditingScreen
     {
         columns = Math.max(4, (frameWidth - 32) / 62);
         var search = field(frameLeft + 16, frameTop + 48, frameWidth - 32,
-            "搜索名称、注册 ID 或模组命名空间", query, 128);
+            QuestTranslations.text("circe.picker.search"), query, 128);
         search.setResponder(value ->
         {
             query = value;
@@ -96,16 +98,16 @@ public final class QuestItemPickerScreen extends QuestEditingScreen
             filter();
         });
         filter();
-        button(frameLeft + 16, frameTop + frameHeight - 26, 70, "上一页", () -> page = Math.max(0, page - 1));
-        button(frameLeft + 94, frameTop + frameHeight - 26, 70, "下一页",
+        button(frameLeft + 16, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.previous"), () -> page = Math.max(0, page - 1));
+        button(frameLeft + 94, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.next"),
             () -> page = Math.min((Math.max(1, matches.size()) - 1) / pageSize(), page + 1));
-        button(frameLeft + frameWidth - 86, frameTop + frameHeight - 26, 70, "返回", this::onClose);
+        button(frameLeft + frameWidth - 86, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.back"), this::onClose);
     }
 
     private void filter()
     {
         String normalized = query.toLowerCase(Locale.ROOT);
-        matches = entries.stream().filter(entry -> entry.name().toLowerCase(Locale.ROOT).contains(normalized)
+        matches = entries.stream().filter(entry -> entry.name().getString().toLowerCase(Locale.ROOT).contains(normalized)
             || entry.id().toString().contains(normalized)).toList();
     }
 
@@ -125,15 +127,15 @@ public final class QuestItemPickerScreen extends QuestEditingScreen
             int y = frameTop + 85 + index / columns * 56;
             graphics.fill(x, y, x + cellWidth - 5, y + 50, QuestTheme.panel());
             graphics.renderItem(entry.icon(), x + (cellWidth - 16) / 2, y + 7);
-            QuestTheme.centered(graphics, font, QuestTheme.fit(font, net.minecraft.network.chat.Component.literal(entry.name()), cellWidth - 10),
+            QuestTheme.centered(graphics, font, QuestTheme.fit(font, entry.name(), cellWidth - 10),
                 x + (cellWidth - 5) / 2, y + 31, QuestTheme.text());
             if (pointerX >= x && pointerX < x + cellWidth - 5 && pointerY >= y && pointerY < y + 50)
             {
-                graphics.renderTooltip(font, net.minecraft.network.chat.Component.literal(entry.name() + " · " + entry.id()), pointerX, pointerY);
+                graphics.renderTooltip(font, entry.name().copy().append(" · " + entry.id()), pointerX, pointerY);
             }
         }
-        graphics.drawString(font, "找到 " + matches.size() + " 项  ·  " + (page + 1) + " / "
-            + Math.max(1, (matches.size() + pageSize() - 1) / pageSize()), frameLeft + 16,
+        graphics.drawString(font, QuestTranslations.text("circe.picker.results", matches.size(), page + 1,
+            Math.max(1, (matches.size() + pageSize() - 1) / pageSize())), frameLeft + 16,
             frameTop + frameHeight - 48, QuestTheme.muted(), false);
     }
 

@@ -41,7 +41,7 @@ public record QuestDefinition(
         {
             if (x < -10_000 || x > 10_000 || y < -10_000 || y > 10_000)
             {
-                throw new IllegalArgumentException("节点坐标应在 -10000..10000 范围内");
+                throw new IllegalArgumentException("circe.validation.position_range");
             }
         }
 
@@ -55,7 +55,7 @@ public record QuestDefinition(
             var value = json.getAsJsonPrimitive(key);
             if (value == null || !value.isNumber())
             {
-                throw new IllegalArgumentException("节点坐标必须为整数");
+                throw new IllegalArgumentException("circe.validation.position_integer");
             }
             return value.getAsBigDecimal().intValueExact();
         }
@@ -150,12 +150,12 @@ public record QuestDefinition(
             int maximumCount = type == ObjectiveType.STATISTIC ? Integer.MAX_VALUE : 1_000_000;
             if (count < 1 || count > maximumCount)
             {
-                throw new IllegalArgumentException("目标数量应为 1.." + maximumCount);
+                throw new QuestValidationException("circe.validation.objective_count", maximumCount);
             }
             String mode = GsonHelper.getAsString(objective, "statistic_mode", "total");
             if (!mode.equals("total") && !mode.equals("since_unlock"))
             {
-                throw new IllegalArgumentException("无效的统计计数方式 " + mode);
+                throw new QuestValidationException("circe.validation.stat_mode", mode);
             }
             objectives.add(new Objective(
                 objectiveId,
@@ -178,12 +178,12 @@ public record QuestDefinition(
             int count = GsonHelper.getAsInt(reward, "count", 1);
             if (count < 1 || count > type.maximumCount())
             {
-                throw new IllegalArgumentException("奖励数量应为 1.." + type.maximumCount());
+                throw new QuestValidationException("circe.validation.reward_count", type.maximumCount());
             }
             JsonObject components = GsonHelper.getAsJsonObject(reward, "components", new JsonObject());
             if (components.toString().length() > 8192)
             {
-                throw new IllegalArgumentException("物品组件最多支持 8192 个字符");
+                throw new IllegalArgumentException("circe.validation.components_size");
             }
             rewards.add(new Reward(type, ResourceLocation.parse(GsonHelper.getAsString(reward, "item", "minecraft:air")),
                 count, components, GsonHelper.getAsJsonObject(reward, "config", new JsonObject())));

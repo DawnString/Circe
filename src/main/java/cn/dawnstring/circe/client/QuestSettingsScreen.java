@@ -1,8 +1,11 @@
 package cn.dawnstring.circe.client;
 
+import cn.dawnstring.circe.quest.QuestValidationException;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
+
 import java.util.function.UnaryOperator;
 
 public final class QuestSettingsScreen extends Screen
@@ -13,17 +16,19 @@ public final class QuestSettingsScreen extends Screen
     private int top;
     private int panelWidth;
     private int page;
-    private String status = "";
+    private Component status = Component.empty();
+    private Language language;
 
     public QuestSettingsScreen(QuestScreen parent)
     {
-        super(Component.literal("任务界面设置"));
+        super(Component.translatable("circe.settings.title"));
         this.parent = parent;
     }
 
     @Override
     protected void init()
     {
+        language = Language.getInstance();
         uiScale = height / 540.0F;
         int viewWidth = Math.round(width / uiScale);
         int frameWidth = (int) (viewWidth * 0.8);
@@ -32,7 +37,12 @@ public final class QuestSettingsScreen extends Screen
         left = (viewWidth + frameWidth) / 2 - panelWidth;
         top = 54;
         button(left + panelWidth - 30, top + 8, 22, "×", this::onClose);
-        String[] tabs = {"外观", "任务 HUD", "关系图"};
+        String[] tabs =
+        {
+            QuestTranslations.text("circe.settings.appearance"),
+            QuestTranslations.text("circe.settings.hud"),
+            QuestTranslations.text("circe.settings.graph")
+        };
         int tabWidth = (panelWidth - 32) / 3;
         for (int index = 0; index < tabs.length; index++)
         {
@@ -54,8 +64,8 @@ public final class QuestSettingsScreen extends Screen
             case 1 -> initHud(preferences);
             default -> initGraph(preferences);
         }
-        button(left + 16, top + 394, 108, "恢复显示默认值", () -> update(current -> QuestUiSettings.DEFAULT));
-        button(left + panelWidth - 104, top + 394, 88, "完成", this::onClose).primary();
+        button(left + 16, top + 394, 108, QuestTranslations.text("circe.button.reset_display"), () -> update(current -> QuestUiSettings.DEFAULT));
+        button(left + panelWidth - 104, top + 394, 88, QuestTranslations.text("circe.button.done"), this::onClose).primary();
     }
 
     private void initAppearance(QuestUiSettings.Preferences preferences)
@@ -67,41 +77,41 @@ public final class QuestSettingsScreen extends Screen
                 new QuestUiSettings.Preferences(style.name(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
                     current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom()))).setHeight(58);
         }
-        button(left + 16, top + 288, panelWidth - 32, "背景不透明度  " + (int) (preferences.opacity() * 100) + "%", () -> update(current ->
+        button(left + 16, top + 288, panelWidth - 32, QuestTranslations.text("circe.settings.opacity", (int) (preferences.opacity() * 100)), () -> update(current ->
             new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
                 current.hasHudCounters(), current.hudScale(), next(current.opacity(), new double[]{1, 0.9, 0.8}), current.graphZoom())));
-        button(left + 16, top + 320, panelWidth - 32, "界面动画  " + enabled(preferences.hasAnimations()), () -> update(current ->
+        button(left + 16, top + 320, panelWidth - 32, QuestTranslations.text("circe.settings.animations", enabled(preferences.hasAnimations())), () -> update(current ->
             new QuestUiSettings.Preferences(current.theme(), !current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
                 current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
     }
 
     private void initHud(QuestUiSettings.Preferences preferences)
     {
-        button(left + 16, top + 86, panelWidth - 32, "调整 HUD 位置", () -> minecraft.setScreen(new QuestHudPositionScreen(this)));
-        button(left + 16, top + 124, panelWidth - 32, "HUD 大小  " + (int) (preferences.hudScale() * 100) + "%", () -> update(current ->
+        button(left + 16, top + 86, panelWidth - 32, QuestTranslations.text("circe.button.hud_position"), () -> minecraft.setScreen(new QuestHudPositionScreen(this)));
+        button(left + 16, top + 124, panelWidth - 32, QuestTranslations.text("circe.settings.hud_scale", (int) (preferences.hudScale() * 100)), () -> update(current ->
             new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
                 current.hasHudCounters(), next(current.hudScale(), new double[]{0.75, 1, 1.25, 1.5}), current.opacity(), current.graphZoom())));
-        button(left + 16, top + 162, panelWidth - 32, "显示任务描述  " + enabled(preferences.hasHudDescription()), () -> update(current ->
+        button(left + 16, top + 162, panelWidth - 32, QuestTranslations.text("circe.settings.description", enabled(preferences.hasHudDescription())), () -> update(current ->
             new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), !current.hasHudDescription(),
                 current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
-        button(left + 16, top + 200, panelWidth - 32, "显示目标计数  " + enabled(preferences.hasHudCounters()), () -> update(current ->
+        button(left + 16, top + 200, panelWidth - 32, QuestTranslations.text("circe.settings.counters", enabled(preferences.hasHudCounters())), () -> update(current ->
             new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
                 !current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
     }
 
     private void initGraph(QuestUiSettings.Preferences preferences)
     {
-        button(left + 16, top + 86, panelWidth - 32, "显示背景网格  " + enabled(preferences.hasGrid()), () -> update(current ->
+        button(left + 16, top + 86, panelWidth - 32, QuestTranslations.text("circe.settings.grid", enabled(preferences.hasGrid())), () -> update(current ->
             new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), !current.hasGrid(), current.hasHudDescription(),
                 current.hasHudCounters(), current.hudScale(), current.opacity(), current.graphZoom())));
-        button(left + 16, top + 124, panelWidth - 32, "适配缩放上限  " + (int) Math.round(preferences.graphZoom() * 100) + "%", () -> update(current ->
+        button(left + 16, top + 124, panelWidth - 32, QuestTranslations.text("circe.settings.zoom", (int) Math.round(preferences.graphZoom() * 100)), () -> update(current ->
             new QuestUiSettings.Preferences(current.theme(), current.hasAnimations(), current.hasGrid(), current.hasHudDescription(),
                 current.hasHudCounters(), current.hudScale(), current.opacity(), next(current.graphZoom(), new double[]{0.8, 1, 1.15, 1.5}))));
     }
 
     private static String enabled(boolean isEnabled)
     {
-        return isEnabled ? "开启" : "关闭";
+        return isEnabled ? QuestTranslations.text("circe.option.enabled") : QuestTranslations.text("circe.option.disabled");
     }
 
     private static double next(double value, double[] choices)
@@ -126,11 +136,11 @@ public final class QuestSettingsScreen extends Screen
         try
         {
             QuestUiSettings.update(change);
-            status = "已保存 · 仅对当前客户端生效";
+            status = Component.translatable("circe.settings.saved");
         }
         catch (Exception exception)
         {
-            status = "保存失败：" + exception.getMessage();
+            status = Component.translatable("circe.error.save", QuestValidationException.message(exception));
         }
         rebuild();
     }
@@ -139,6 +149,15 @@ public final class QuestSettingsScreen extends Screen
     {
         clearWidgets();
         init();
+    }
+
+    @Override
+    public void tick()
+    {
+        if (language != Language.getInstance())
+        {
+            rebuild();
+        }
     }
 
     @Override
@@ -163,10 +182,10 @@ public final class QuestSettingsScreen extends Screen
         }
         else
         {
-            String hint = page == 1 ? "位置设置提供可拖动的实际 HUD 预览。" : "修改上限后，点击关系图的「复位」应用。";
+            String hint = page == 1 ? QuestTranslations.text("circe.settings.hud_hint") : QuestTranslations.text("circe.settings.graph_hint");
             graphics.drawString(font, QuestTheme.fit(font, Component.literal(hint), panelWidth - 32), left + 16, top + 254, QuestTheme.muted(), false);
         }
-        graphics.drawString(font, QuestTheme.fit(font, Component.literal(status), panelWidth - 32), left + 16, top + 368, QuestTheme.muted(), false);
+        graphics.drawString(font, QuestTheme.fit(font, status, panelWidth - 32), left + 16, top + 368, QuestTheme.muted(), false);
         graphics.pose().popPose();
         QuestCompletionBanner.render(graphics);
     }

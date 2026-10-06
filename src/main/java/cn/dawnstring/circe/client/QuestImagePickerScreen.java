@@ -2,10 +2,13 @@ package cn.dawnstring.circe.client;
 
 import cn.dawnstring.circe.network.ImageUploadPayload;
 import cn.dawnstring.circe.quest.QuestImageStore;
+import cn.dawnstring.circe.quest.QuestValidationException;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.PacketDistributor;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -25,32 +28,32 @@ public final class QuestImagePickerScreen extends QuestEditingScreen
 
     public QuestImagePickerScreen(Screen parent, Consumer<String> onSelect)
     {
-        super(parent, "图片资源库");
+        super(parent, "circe.image.library");
         this.onSelect = onSelect;
     }
 
     @Override
     protected void initEditor()
     {
-        var search = field(frameLeft + 16, frameTop + 50, frameWidth - 32, "搜索资源图片", query, 128);
+        var search = field(frameLeft + 16, frameTop + 50, frameWidth - 32, QuestTranslations.text("circe.image.search"), query, 128);
         search.setResponder(value ->
         {
             query = value;
             page = 0;
             filter();
         });
-        var path = field(frameLeft + 16, frameTop + 102, frameWidth - 112, "导入本地 PNG（最大 1024×1024，256 KiB）", localPath, 1024);
+        var path = field(frameLeft + 16, frameTop + 102, frameWidth - 112, QuestTranslations.text("circe.image.import_hint"), localPath, 1024);
         path.setResponder(value -> localPath = value);
-        button(frameLeft + frameWidth - 88, frameTop + 102, 72, "导入图片", this::upload).primary();
+        button(frameLeft + frameWidth - 88, frameTop + 102, 72, QuestTranslations.text("circe.button.import_image"), this::upload).primary();
         filter();
-        button(frameLeft + 16, frameTop + frameHeight - 26, 70, "上一页", () -> page = Math.max(0, page - 1));
-        button(frameLeft + 94, frameTop + frameHeight - 26, 70, "下一页", () -> page = Math.min(Math.max(0, (available.size() - 1) / 8), page + 1));
-        button(frameLeft + 172, frameTop + frameHeight - 26, 70, "清除图片", () ->
+        button(frameLeft + 16, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.previous"), () -> page = Math.max(0, page - 1));
+        button(frameLeft + 94, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.next"), () -> page = Math.min(Math.max(0, (available.size() - 1) / 8), page + 1));
+        button(frameLeft + 172, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.clear_image"), () ->
         {
             onSelect.accept("");
             onClose();
         });
-        button(frameLeft + frameWidth - 86, frameTop + frameHeight - 26, 70, "返回", this::onClose);
+        button(frameLeft + frameWidth - 86, frameTop + frameHeight - 26, 70, QuestTranslations.text("circe.button.back"), this::onClose);
     }
 
     private void filter()
@@ -72,7 +75,7 @@ public final class QuestImagePickerScreen extends QuestEditingScreen
             Path path = Path.of(localPath.trim());
             if (Files.size(path) > QuestImageStore.MAX_BYTES)
             {
-                throw new IllegalArgumentException("图片超过 256 KiB");
+                throw new IllegalArgumentException(QuestTranslations.text("circe.error.image_size"));
             }
             byte[] png = Files.readAllBytes(path);
             QuestImageStore.validate(png);
@@ -80,11 +83,11 @@ public final class QuestImagePickerScreen extends QuestEditingScreen
             observed = ClientQuestState.editResultSequence();
             uploadedAt = net.minecraft.Util.getMillis();
             PacketDistributor.sendToServer(new ImageUploadPayload(png));
-            status = "正在导入图片…";
+            status = Component.translatable("circe.image.importing");
         }
         catch (Exception exception)
         {
-            status = "导入失败：" + exception.getMessage();
+            status = Component.translatable("circe.error.import", QuestValidationException.message(exception));
         }
     }
 
@@ -109,7 +112,7 @@ public final class QuestImagePickerScreen extends QuestEditingScreen
         else if (pendingImage != null && net.minecraft.Util.getMillis() - uploadedAt > 15000)
         {
             pendingImage = null;
-            status = "图片导入超时，请重试";
+            status = Component.translatable("circe.error.image_timeout");
         }
     }
 
@@ -124,7 +127,7 @@ public final class QuestImagePickerScreen extends QuestEditingScreen
             int y = frameTop + 144 + index / 4 * 108;
             graphics.fill(x, y, x + cellWidth - 6, y + 100, QuestTheme.panel());
             ClientQuestImages.render(graphics, id.toString(), x + 8, y + 6, cellWidth - 22, 66);
-            graphics.drawString(font, QuestTheme.fit(font, net.minecraft.network.chat.Component.literal(id.getPath()), cellWidth - 16),
+            graphics.drawString(font, QuestTheme.fit(font, Component.literal(id.getPath()), cellWidth - 16),
                 x + 6, y + 82, QuestTheme.muted(), false);
         }
     }

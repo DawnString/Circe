@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.PacketDistributor;
+
 import java.io.ByteArrayInputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -105,7 +106,7 @@ public final class ClientQuestImages
         if (info == null)
         {
             graphics.fill(x, y, x + width, y + 40, QuestTheme.panel());
-            QuestTheme.centered(graphics, Minecraft.getInstance().font, "图片加载中", x + width / 2, y + 16, QuestTheme.muted());
+            QuestTheme.centered(graphics, Minecraft.getInstance().font, QuestTranslations.text("circe.image.loading"), x + width / 2, y + 16, QuestTheme.muted());
             return 40;
         }
         int height = Math.max(1, Math.min(maximumHeight, width * info.height() / info.width()));

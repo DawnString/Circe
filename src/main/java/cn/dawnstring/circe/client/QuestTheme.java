@@ -14,11 +14,11 @@ public final class QuestTheme
 
     public enum Style
     {
-        CLASSIC("经典黑绿", "像素轮廓 · 原版风格", new Palette(0xFF101712, 0xFF1A231D, 0xFF284E31,
+        CLASSIC("circe.theme.classic", "circe.theme.classic_description", new Palette(0xFF101712, 0xFF1A231D, 0xFF284E31,
             0xFF76D46A, 0xFFE7EFE8, 0xFF9CAA9E, 0xFFE5C76B, 0xFF405449, 0xFF427A3F, 0x182F4937, 0xFF59675D, 0)),
-        MODERN("现代深色", "石墨灰 · 柔和层次", new Palette(0xFF191D24, 0xFF242A33, 0xFF244B43,
+        MODERN("circe.theme.modern", "circe.theme.modern_description", new Palette(0xFF191D24, 0xFF242A33, 0xFF244B43,
             0xFF70D6AE, 0xFFE8EDF3, 0xFFA1ADBD, 0xFFE6BE73, 0xFF3B4452, 0xFF344A49, 0x163F4855, 0xFF66717F, 4)),
-        PAPER("纸页浅色", "暖白纸页 · 墨绿强调", new Palette(0xFFF4F1E8, 0xFFEAE6DC, 0xFFD5E5D6,
+        PAPER("circe.theme.paper", "circe.theme.paper_description", new Palette(0xFFF4F1E8, 0xFFEAE6DC, 0xFFD5E5D6,
             0xFF2C704F, 0xFF28372E, 0xFF566257, 0xFF886019, 0xFFCCCFC3, 0xFFC4DBC7, 0x187C8876, 0xFF8B9487, 4));
 
         private final String title;
@@ -34,12 +34,12 @@ public final class QuestTheme
 
         public String title()
         {
-            return title;
+            return QuestTranslations.text(title);
         }
 
         public String description()
         {
-            return description;
+            return QuestTranslations.text(description);
         }
 
         public Palette palette()

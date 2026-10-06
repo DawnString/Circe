@@ -1,5 +1,6 @@
 package cn.dawnstring.circe.client;
 
+import cn.dawnstring.circe.quest.QuestValidationException;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -11,12 +12,12 @@ public final class QuestHudPositionScreen extends Screen
     private boolean isDragging;
     private float dragOffsetX;
     private float dragOffsetY;
-    private String status = "拖动追踪卡片调整位置，保存后生效";
+    private Component status = Component.translatable("circe.hud.position_hint");
     private float uiScale;
 
     public QuestHudPositionScreen(Screen parent)
     {
-        super(Component.literal("HUD 位置"));
+        super(Component.translatable("circe.hud.position"));
         this.parent = parent;
     }
 
@@ -26,9 +27,9 @@ public final class QuestHudPositionScreen extends Screen
         isDragging = false;
         uiScale = height / 540.0F;
         int center = Math.round(width / uiScale) / 2;
-        addRenderableWidget(new QuestEditorButton(center - 126, 494, 76, Component.literal("保存位置"), button -> save()).primary());
-        addRenderableWidget(new QuestEditorButton(center - 42, 494, 76, Component.literal("恢复默认"), button -> position = QuestHudPosition.DEFAULT));
-        addRenderableWidget(new QuestEditorButton(center + 42, 494, 76, Component.literal("取消"), button -> onClose()));
+        addRenderableWidget(new QuestEditorButton(center - 126, 494, 76, Component.translatable("circe.button.save_position"), button -> save()).primary());
+        addRenderableWidget(new QuestEditorButton(center - 42, 494, 76, Component.translatable("circe.button.reset"), button -> position = QuestHudPosition.DEFAULT));
+        addRenderableWidget(new QuestEditorButton(center + 42, 494, 76, Component.translatable("circe.button.cancel"), button -> onClose()));
     }
 
     private void save()
@@ -40,7 +41,7 @@ public final class QuestHudPositionScreen extends Screen
         }
         catch (Exception exception)
         {
-            status = "保存失败：" + exception.getMessage();
+            status = Component.translatable("circe.error.save", QuestValidationException.message(exception));
         }
     }
 

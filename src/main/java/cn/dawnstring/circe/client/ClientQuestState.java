@@ -1,10 +1,10 @@
 package cn.dawnstring.circe.client;
 
 import cn.dawnstring.circe.network.CatalogPayload;
-import cn.dawnstring.circe.network.ProgressPayload;
 import cn.dawnstring.circe.network.EditResultPayload;
-import cn.dawnstring.circe.quest.QuestDefinition;
+import cn.dawnstring.circe.network.ProgressPayload;
 import cn.dawnstring.circe.quest.ChapterDefinition;
+import cn.dawnstring.circe.quest.QuestDefinition;
 import cn.dawnstring.circe.quest.QuestProgress;
 import com.google.gson.JsonParser;
 import net.minecraft.resources.ResourceLocation;
@@ -22,7 +22,7 @@ public final class ClientQuestState
     private static final Map<String, ChapterDefinition> CHAPTERS = new LinkedHashMap<>();
     private static ResourceLocation trackedQuest;
     private static long lastProgressChange;
-    private static String bookTitle = "CIRCE · 任务";
+    private static String bookTitle = "circe.screen.title";
     private static boolean canEdit;
     private static long bookRevision;
     private static EditResultPayload editResult;
@@ -100,7 +100,8 @@ public final class ClientQuestState
 
     public static String bookTitle()
     {
-        return bookTitle;
+        // 兼容旧配置的默认标题；自定义标题仍按原文或翻译键显示。
+        return bookTitle.equals("CIRCE · 任务") ? "circe.screen.title" : bookTitle;
     }
 
     public static List<ChapterDefinition> chapters()
@@ -173,7 +174,7 @@ public final class ClientQuestState
         CHAPTERS.clear();
         trackedQuest = null;
         lastProgressChange = 0;
-        bookTitle = "CIRCE · 任务";
+        bookTitle = "circe.screen.title";
         canEdit = false;
         bookRevision = 0;
         editResult = null;
