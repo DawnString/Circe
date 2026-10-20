@@ -189,7 +189,7 @@ public final class QuestDetailsPopup
 
     private int renderObjectives(GuiGraphics graphics, Font font, QuestDefinition definition, int cursorY)
     {
-        cursorY = wrapped(graphics, font, Component.translatable("circe.screen.objectives"), cursorY, QuestTheme.muted());
+        cursorY = wrapped(graphics, font, Component.translatable(definition.isTeamShared() ? "circe.team.objectives" : "circe.screen.objectives"), cursorY, QuestTheme.muted());
         var progress = ClientQuestState.progress(definition);
         for (var objective : definition.objectives())
         {
@@ -223,7 +223,7 @@ public final class QuestDetailsPopup
         {
             return cursorY;
         }
-        cursorY = wrapped(graphics, font, Component.translatable("circe.screen.rewards"), cursorY, QuestTheme.muted());
+        cursorY = wrapped(graphics, font, Component.translatable(definition.isTeamReward() ? "circe.team.reward.team" : "circe.team.reward.player"), cursorY, QuestTheme.muted());
         for (var reward : definition.rewards())
         {
             ItemStack stack = reward.type().hasItem()

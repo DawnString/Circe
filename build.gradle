@@ -1,3 +1,6 @@
+import org.gradle.api.provider.ValueSource
+import org.gradle.api.provider.ValueSourceParameters
+
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -39,6 +42,25 @@ repositories {
 
 base {
     archivesName = mod_id
+}
+
+// 使用上海时区，并让配置缓存重新检查每次构建的时间。
+abstract class BuildTimestampSource implements ValueSource<String, ValueSourceParameters.None>
+{
+    @Override
+    String obtain()
+    {
+        return java.time.ZonedDateTime.now(java.time.ZoneId.of('Asia/Shanghai'))
+                .format(java.time.format.DateTimeFormatter.ofPattern('yyyyMMddHHmm'))
+    }
+}
+
+def buildTimestamp = providers.of(BuildTimestampSource) {}
+def archivePrefix = "${mod_id}-${project.version}-${minecraft_version}-${neo_version}"
+
+tasks.named('jar', Jar).configure
+{
+    archiveFileName = buildTimestamp.map { timestamp -> "${archivePrefix}-${timestamp}.jar" }
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)

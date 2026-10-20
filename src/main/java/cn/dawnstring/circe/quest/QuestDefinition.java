@@ -20,7 +20,9 @@ public record QuestDefinition(
     List<ResourceLocation> prerequisites,
     List<Objective> objectives,
     List<Reward> rewards,
-    GraphPosition position)
+    GraphPosition position,
+    boolean isTeamShared,
+    boolean isTeamReward)
 {
     public QuestDefinition
     {
@@ -33,6 +35,13 @@ public record QuestDefinition(
         String description, String image, List<ResourceLocation> prerequisites, List<Objective> objectives, List<Reward> rewards)
     {
         this(id, revision, chapter, order, title, description, image, prerequisites, objectives, rewards, null);
+    }
+
+    public QuestDefinition(ResourceLocation id, int revision, String chapter, int order, String title,
+        String description, String image, List<ResourceLocation> prerequisites, List<Objective> objectives,
+        List<Reward> rewards, GraphPosition position)
+    {
+        this(id, revision, chapter, order, title, description, image, prerequisites, objectives, rewards, position, true, false);
     }
 
     public record GraphPosition(int x, int y)
@@ -192,11 +201,18 @@ public record QuestDefinition(
         {
             throw new IllegalArgumentException("At most 16 reward stacks are supported");
         }
+        String progressScope = GsonHelper.getAsString(json, "progress_scope", "team");
+        String rewardScope = GsonHelper.getAsString(json, "reward_scope", "player");
+        if (!List.of("team", "player").contains(progressScope) || !List.of("team", "player").contains(rewardScope))
+        {
+            throw new IllegalArgumentException("circe.team.error.scope");
+        }
         return new QuestDefinition(
             id, revision, text(json, "chapter", "circe.chapter.beginning", 256),
             GsonHelper.getAsInt(json, "order", 0), text(json, "title", null, 256),
             text(json, "description", "", 8192), text(json, "image", "", 256), prerequisites, objectives, rewards,
-            json.has("position") ? GraphPosition.parse(GsonHelper.getAsJsonObject(json, "position")) : null);
+            json.has("position") ? GraphPosition.parse(GsonHelper.getAsJsonObject(json, "position")) : null,
+            progressScope.equals("team"), rewardScope.equals("team"));
     }
 
     public JsonObject toJson()
@@ -208,6 +224,8 @@ public record QuestDefinition(
         json.addProperty("title", title);
         json.addProperty("description", description);
         json.addProperty("image", image);
+        json.addProperty("progress_scope", isTeamShared ? "team" : "player");
+        json.addProperty("reward_scope", isTeamReward ? "team" : "player");
         if (position != null)
         {
             json.add("position", position.toJson());

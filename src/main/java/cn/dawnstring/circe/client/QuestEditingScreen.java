@@ -55,6 +55,11 @@ public abstract class QuestEditingScreen extends Screen
 
     protected abstract void initEditor();
 
+    protected boolean requiresEditPermission()
+    {
+        return true;
+    }
+
     protected void configureFrame(int viewWidth)
     {
     }
@@ -184,7 +189,7 @@ public abstract class QuestEditingScreen extends Screen
     @Override
     public void tick()
     {
-        if (!ClientQuestState.canEdit())
+        if (requiresEditPermission() && !ClientQuestState.canEdit())
         {
             minecraft.setScreen(new QuestScreen());
             return;

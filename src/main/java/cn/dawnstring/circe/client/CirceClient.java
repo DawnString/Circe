@@ -28,6 +28,7 @@ public class CirceClient
         QuestUiSettings.load();
         QuestNetwork.installClientReceivers(ClientQuestState::receiveCatalog,
             ClientQuestState::receiveProgress, ClientQuestState::receiveEditResult);
+        QuestNetwork.installTeamReceiver(ClientQuestTeams::receive);
         QuestNetwork.installMediaReceivers(QuestCompletionBanner::receive, ClientQuestImages::receive);
         modEventBus.addListener(CirceClient::registerKeys);
         modEventBus.addListener(CirceClient::registerHud);

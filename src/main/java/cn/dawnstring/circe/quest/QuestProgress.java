@@ -4,12 +4,15 @@ import net.minecraft.nbt.CompoundTag;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 public class QuestProgress
 {
     private final int revision;
     private final Map<String, Integer> counts = new HashMap<>();
     private final Map<String, Integer> statisticBaselines = new HashMap<>();
+    private final Map<String, Integer> teamStatisticCounts = new HashMap<>();
     private boolean isCompleted;
     private boolean isClaimed;
     private boolean isActivated;
@@ -80,6 +83,45 @@ public class QuestProgress
         return setCount(objective, count) || hasNewBaseline;
     }
 
+    public boolean updateTeamPoll(QuestDefinition.Objective objective, Map<UUID, Integer> current,
+        Set<UUID> members)
+    {
+        if (isCompleted)
+        {
+            return false;
+        }
+        boolean hasChanges = false;
+        long total = 0;
+        if (objective.type() == ObjectiveType.STATISTIC)
+        {
+            for (var entry : current.entrySet())
+            {
+                String key = objective.id() + "/" + entry.getKey();
+                int value = Math.max(0, entry.getValue());
+                if (objective.isSinceUnlock() && !statisticBaselines.containsKey(key))
+                {
+                    statisticBaselines.put(key, value);
+                    hasChanges = true;
+                }
+                int count = (int) Math.max(0L, (long) value - statisticBaselines.getOrDefault(key, 0));
+                if (!Integer.valueOf(count).equals(teamStatisticCounts.put(key, count)))
+                {
+                    hasChanges = true;
+                }
+            }
+            for (UUID member : members)
+            {
+                total += teamStatisticCounts.getOrDefault(objective.id() + "/" + member, 0);
+            }
+        }
+        else
+        {
+            // 持有类及扩展轮询目标仅汇总在线成员的当前值，不缓存离线背包。
+            total = current.values().stream().mapToLong(value -> Math.max(0, value)).sum();
+        }
+        return setCount(objective, (int) Math.min(objective.count(), total)) || hasChanges;
+    }
+
     public boolean completeIfReady(QuestDefinition definition)
     {
         if (isCompleted || definition.objectives().stream()
@@ -115,6 +157,9 @@ public class QuestProgress
         CompoundTag baselines = new CompoundTag();
         statisticBaselines.forEach(baselines::putInt);
         tag.put("statisticBaselines", baselines);
+        CompoundTag teamCounts = new CompoundTag();
+        teamStatisticCounts.forEach(teamCounts::putInt);
+        tag.put("teamStatisticCounts", teamCounts);
         return tag;
     }
 
@@ -133,6 +178,11 @@ public class QuestProgress
         for (String objectiveId : baselines.getAllKeys())
         {
             progress.statisticBaselines.put(objectiveId, Math.max(0, baselines.getInt(objectiveId)));
+        }
+        CompoundTag teamCounts = tag.getCompound("teamStatisticCounts");
+        for (String key : teamCounts.getAllKeys())
+        {
+            progress.teamStatisticCounts.put(key, Math.max(0, teamCounts.getInt(key)));
         }
         return progress;
     }

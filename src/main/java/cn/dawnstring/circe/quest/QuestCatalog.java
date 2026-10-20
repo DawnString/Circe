@@ -241,7 +241,9 @@ public class QuestCatalog extends SimpleJsonResourceReloadListener
                 if (existing != null && (definition.revision() < existing.revision()
                     || (definition.revision() == existing.revision()
                     && (!sameObjectives(definition.objectives(), existing.objectives())
-                    || !definition.prerequisites().equals(existing.prerequisites())))))
+                    || !definition.prerequisites().equals(existing.prerequisites())
+                    || definition.isTeamShared() != existing.isTeamShared()
+                    || definition.isTeamReward() != existing.isTeamReward()))))
                 {
                     throw new IllegalArgumentException("circe.validation.revision");
                 }

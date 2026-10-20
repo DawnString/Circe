@@ -40,6 +40,21 @@ public final class QuestApi
         return definitions(player.server).stream().map(definition -> snapshot(player, definition)).toList();
     }
 
+    public record TeamInfo(java.util.UUID id, String name, java.util.UUID owner, java.util.Map<java.util.UUID, String> members)
+    {
+        public TeamInfo
+        {
+            members = java.util.Map.copyOf(members);
+        }
+    }
+
+    public static Optional<TeamInfo> team(ServerPlayer player)
+    {
+        requireServerThread(player.server);
+        var team = cn.dawnstring.circe.quest.QuestTeamSavedData.get(player.server).team(player.getUUID());
+        return team == null ? Optional.empty() : Optional.of(new TeamInfo(team.id(), team.name(), team.owner(), team.members()));
+    }
+
     public static Optional<ResourceLocation> trackedQuest(ServerPlayer player)
     {
         requireServerThread(player.server);
@@ -51,11 +66,11 @@ public final class QuestApi
     {
         requireServerThread(player.server);
         var saved = QuestSavedData.get(player.server);
-        var progress = saved.peekProgress(player.getUUID(), definition);
+        var progress = saved.peekFor(player, definition);
         var counts = new LinkedHashMap<String, Integer>();
         definition.objectives().forEach(objective -> counts.put(objective.id(), progress.count(objective.id())));
         return new QuestState(definition.id(), definition.revision(), QuestService.isUnlocked(player, definition),
-            progress.isCompleted(), progress.isClaimed(), definition.id().equals(saved.tracked(player.getUUID())), counts);
+            progress.isCompleted(), saved.isClaimed(player, definition), definition.id().equals(saved.tracked(player.getUUID())), counts);
     }
 
     public static void requireServerThread(MinecraftServer server)

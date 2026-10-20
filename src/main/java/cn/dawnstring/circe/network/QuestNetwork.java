@@ -26,13 +26,31 @@ public final class QuestNetwork
     {
     };
 
+    private static Consumer<TeamStatePayload> teamReceiver = ignored ->
+    {
+    };
+
+    public static void installTeamReceiver(Consumer<TeamStatePayload> receiver)
+    {
+        teamReceiver = receiver;
+    }
+
     private QuestNetwork()
     {
     }
 
     public static void register(RegisterPayloadHandlersEvent event)
     {
-        var registrar = event.registrar("8");
+        var registrar = event.registrar("9");
+        registrar.playToClient(TeamStatePayload.TYPE, TeamStatePayload.STREAM_CODEC,
+            (payload, context) -> teamReceiver.accept(payload));
+        registrar.playToServer(TeamActionPayload.TYPE, TeamActionPayload.STREAM_CODEC, (payload, context) ->
+        {
+            if (context.player() instanceof ServerPlayer player)
+            {
+                cn.dawnstring.circe.quest.QuestTeamService.handle(player, payload);
+            }
+        });
         registrar.playToClient(CompletionPayload.TYPE, CompletionPayload.STREAM_CODEC, (payload, context) -> completionReceiver.accept(payload));
         registrar.playToClient(ImageDataPayload.TYPE, ImageDataPayload.STREAM_CODEC, (payload, context) -> imageReceiver.accept(payload));
         registrar.playToServer(ImageUploadPayload.TYPE, ImageUploadPayload.STREAM_CODEC, (payload, context) ->

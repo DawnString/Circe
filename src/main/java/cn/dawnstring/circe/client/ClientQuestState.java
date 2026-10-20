@@ -168,6 +168,7 @@ public final class ClientQuestState
 
     public static void clear()
     {
+        ClientQuestTeams.clear();
         DEFINITIONS.clear();
         PROGRESS.clear();
         UNLOCKED.clear();

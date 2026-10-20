@@ -229,7 +229,16 @@ public final class QuestEditorScreen extends QuestEditingScreen
         bind("prerequisites", left, top + 176, width, QuestTranslations.text("circe.editor.prerequisites"), 8192);
         label(QuestTranslations.text("circe.editor.revision_hint"), left, top + 212);
         label(QuestTranslations.text("circe.editor.reset_hint"), left, top + 228);
-        label(QuestTranslations.text("circe.editor.content_hint"), left, top + 258);
+        label(QuestTranslations.text("circe.team.progress_scope"), left, top + 251);
+        label(QuestTranslations.text("circe.team.reward_scope"), left + half + 12, top + 251);
+        addRenderableWidget(new QuestDropdown(left, top + 264, half, java.util.List.of(
+            new QuestDropdown.Option("team", Component.translatable("circe.team.scope.team")),
+            new QuestDropdown.Option("player", Component.translatable("circe.team.scope.player"))),
+            values.get("progress_scope"), value -> values.put("progress_scope", value)));
+        addRenderableWidget(new QuestDropdown(left + half + 12, top + 264, half, java.util.List.of(
+            new QuestDropdown.Option("player", Component.translatable("circe.team.reward.player")),
+            new QuestDropdown.Option("team", Component.translatable("circe.team.reward.team"))),
+            values.get("reward_scope"), value -> values.put("reward_scope", value)));
     }
 
     private void contentFields(int left, int top, int width)
@@ -363,6 +372,8 @@ public final class QuestEditorScreen extends QuestEditingScreen
         {
             values.put(key, draft.get(key).getAsString());
         }
+        values.put("progress_scope", draft.has("progress_scope") ? draft.get("progress_scope").getAsString() : "team");
+        values.put("reward_scope", draft.has("reward_scope") ? draft.get("reward_scope").getAsString() : "player");
         values.put("prerequisites", java.util.stream.StreamSupport.stream(draft.getAsJsonArray("prerequisites").spliterator(), false)
             .map(entry -> entry.getAsString()).collect(java.util.stream.Collectors.joining(", ")));
         baselineRevision = ClientQuestState.bookRevision();
@@ -384,7 +395,7 @@ public final class QuestEditorScreen extends QuestEditingScreen
             {
                 throw new IllegalArgumentException(QuestTranslations.text("circe.error.quest_exists"));
             }
-            for (String key : new String[]{"title", "chapter", "description", "image"})
+            for (String key : new String[]{"title", "chapter", "description", "image", "progress_scope", "reward_scope"})
             {
                 draft.addProperty(key, values.get(key));
             }

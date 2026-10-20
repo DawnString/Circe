@@ -43,7 +43,7 @@ public final class QuestService
         return definition.prerequisites().stream().allMatch(id ->
         {
             QuestDefinition prerequisite = CATALOG.get(id);
-            return prerequisite != null && saved.peekProgress(player.getUUID(), prerequisite).isCompleted();
+            return prerequisite != null && saved.peekFor(player, prerequisite).isCompleted();
         });
     }
 
@@ -68,7 +68,7 @@ public final class QuestService
         Map<ResourceLocation, CompoundTag> previous = new HashMap<>();
         for (var definition : CATALOG.all())
         {
-            CompoundTag state = saved.progress(player.getUUID(), definition).save();
+            CompoundTag state = saved.stateFor(player, definition);
             state.putBoolean("unlocked", isUnlocked(player, definition));
             state.putString("tracked", tracked == null ? "" : tracked.toString());
             states.add(definition.id().toString(), net.minecraft.nbt.NbtOps.INSTANCE.convertTo(
@@ -79,6 +79,7 @@ public final class QuestService
         LAST_PERMISSION.put(player.getUUID(), canEdit(player));
         PacketDistributor.sendToPlayer(player, new CatalogPayload(catalog.toString()));
         LAST_SENT.put(player.getUUID(), previous);
+        QuestTeamService.synchronize(player, Component.empty());
     }
 
     public static void tick(ServerPlayer player)
@@ -126,7 +127,7 @@ public final class QuestService
             hasNewCompletion = false;
             for (QuestDefinition definition : definitions)
             {
-                QuestProgress progress = saved.progress(player.getUUID(), definition);
+                QuestProgress progress = saved.progressFor(player, definition);
                 if (!isUnlocked(player, definition))
                 {
                     continue;
@@ -157,7 +158,11 @@ public final class QuestService
                     saved.setDirty();
                     hasNewCompletion = true;
                     QuestLifecycleEvent.publish(new QuestLifecycleEvent.Completed(player, definition, QuestApi.snapshot(player, definition)));
-                    PacketDistributor.sendToPlayer(player, new cn.dawnstring.circe.network.CompletionPayload(definition.id(), definition.title()));
+                    for (ServerPlayer recipient : QuestTeamService.participants(player, definition))
+                    {
+                        PacketDistributor.sendToPlayer(recipient,
+                            new cn.dawnstring.circe.network.CompletionPayload(definition.id(), definition.title()));
+                    }
                 }
             }
         }
@@ -180,6 +185,21 @@ public final class QuestService
         }
         try
         {
+            var team = definition.isTeamShared() ? QuestTeamSavedData.get(player.server).team(player.getUUID()) : null;
+            if (team != null)
+            {
+                Map<UUID, Integer> counts = new HashMap<>();
+                for (UUID member : team.members().keySet())
+                {
+                    ServerPlayer online = player.server.getPlayerList().getPlayer(member);
+                    if (online != null && !online.isSpectator())
+                    {
+                        counts.put(member, objective.type().poll(online, objective));
+                    }
+                }
+                retries.remove(key);
+                return progress.updateTeamPoll(objective, counts, team.members().keySet());
+            }
             int count = objective.type().poll(player, objective);
             retries.remove(key);
             return objective.type() == ObjectiveType.STATISTIC
@@ -217,7 +237,7 @@ public final class QuestService
             .toList();
         for (QuestDefinition definition : eligible)
         {
-            QuestProgress progress = saved.progress(player.getUUID(), definition);
+            QuestProgress progress = saved.progressFor(player, definition);
             QuestState previous = QuestApi.snapshot(player, definition);
             for (var objective : definition.objectives())
             {
@@ -264,7 +284,7 @@ public final class QuestService
             return false;
         }
         QuestSavedData saved = QuestSavedData.get(player.server);
-        QuestProgress progress = saved.progress(player.getUUID(), definition);
+        QuestProgress progress = saved.progressFor(player, definition);
         if (progress.isCompleted())
         {
             return false;
@@ -295,8 +315,8 @@ public final class QuestService
     public static boolean claim(ServerPlayer player, QuestDefinition definition)
     {
         QuestSavedData saved = QuestSavedData.get(player.server);
-        QuestProgress progress = saved.progress(player.getUUID(), definition);
-        if (!progress.isCompleted() || progress.isClaimed())
+        QuestProgress progress = saved.progressFor(player, definition);
+        if (!isUnlocked(player, definition) || !progress.isCompleted() || saved.isClaimed(player, definition))
         {
             return false;
         }
@@ -319,7 +339,7 @@ public final class QuestService
             player.displayClientMessage(Component.translatable("circe.message.inventory_full"), true);
             return false;
         }
-        if (!progress.claim())
+        if (!saved.claimFor(player, definition))
         {
             return false;
         }
@@ -367,6 +387,7 @@ public final class QuestService
         LAST_ACTION.remove(playerId);
         LAST_PERMISSION.remove(playerId);
         POLL_RETRY_TICKS.remove(playerId);
+        QuestTeamService.forget(playerId);
     }
 
     public static void clearSession()
@@ -375,6 +396,7 @@ public final class QuestService
         LAST_ACTION.clear();
         LAST_PERMISSION.clear();
         POLL_RETRY_TICKS.clear();
+        QuestTeamService.clearSession();
     }
 
     private static void toggleTracking(ServerPlayer player, QuestDefinition definition)
@@ -402,7 +424,7 @@ public final class QuestService
         Map<ResourceLocation, CompoundTag> previous = LAST_SENT.computeIfAbsent(player.getUUID(), ignored -> new HashMap<>());
         for (QuestDefinition definition : CATALOG.all())
         {
-            CompoundTag state = saved.progress(player.getUUID(), definition).save();
+            CompoundTag state = saved.stateFor(player, definition);
             state.putBoolean("unlocked", isUnlocked(player, definition));
             state.putString("tracked", tracked == null ? "" : tracked.toString());
             if (!state.equals(previous.get(definition.id())))

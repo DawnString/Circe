@@ -32,6 +32,7 @@ public class QuestScreen extends Screen
     private QuestButton fitButton;
     private QuestButton editorButton;
     private QuestButton settingsButton;
+    private QuestButton teamButton;
     private List<QuestDefinition> knownDefinitions = List.of();
     private List<String> chapters = List.of();
     private String selectedChapter;
@@ -102,6 +103,13 @@ public class QuestScreen extends Screen
         settingsButton = addRenderableWidget(new QuestButton(panelLeft + panelWidth - 145, panelTop + 6,
             46, Component.translatable("circe.button.settings"), button -> minecraft.setScreen(new QuestSettingsScreen(this))));
         settingsButton.setHeight(18);
+        teamButton = addRenderableWidget(new QuestButton(panelLeft + panelWidth - 201, panelTop + 6,
+            50, Component.translatable("circe.team.button"), button ->
+            {
+                minecraft.setScreen(new QuestTeamScreen(this));
+                ClientQuestTeams.send("refresh", "");
+            }));
+        teamButton.setHeight(18);
         popup = new QuestDetailsPopup();
         popup.buttons().forEach(this::addRenderableWidget);
         refreshCatalog(true);
@@ -188,6 +196,7 @@ public class QuestScreen extends Screen
         fitButton.render(graphics, localMouseX, localMouseY, partialTick);
         editorButton.render(graphics, localMouseX, localMouseY, partialTick);
         settingsButton.render(graphics, localMouseX, localMouseY, partialTick);
+        teamButton.render(graphics, localMouseX, localMouseY, partialTick);
         positionPopup();
         if (popup.isOpen())
         {
@@ -232,7 +241,7 @@ public class QuestScreen extends Screen
         graphics.renderItem(new ItemStack(Items.BOOK),
             panelLeft + 10, panelTop + 7);
         graphics.drawString(font, QuestTheme.fit(font, isEditing ? Component.translatable("circe.graph.edit_title", Component.translatable(ClientQuestState.bookTitle()))
-            : Component.translatable(ClientQuestState.bookTitle()), panelWidth - 188),
+            : Component.translatable(ClientQuestState.bookTitle()), panelWidth - 244),
             panelLeft + 32, panelTop + 12, QuestTheme.text(), false);
         graphics.fill(panelLeft + 1, panelTop + HEADER_HEIGHT - 1,
             panelLeft + panelWidth - 1, panelTop + HEADER_HEIGHT, QuestTheme.border());
